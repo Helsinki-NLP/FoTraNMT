@@ -311,8 +311,8 @@ class Trainer(object):
         for batch in valid_iter:
             if first_iter and self.report_bleu:
                 import csv
-                exs_src = [sent.src for sent in batch.dataset.examples]
-                exs_tgt = [sent.tgt for sent in batch.dataset.examples]
+                exs_src = [tuple(x.encode("utf-8") for x in sent.src) for sent in batch.dataset.examples]
+                exs_tgt = [tuple(x.encode("utf-8") for x in sent.tgt) for sent in batch.dataset.examples]
                 # write tmp files
                 with open('src.tmp', "w") as output:
                     writer = csv.writer(output, lineterminator='\n', delimiter=" ", quotechar='|')
