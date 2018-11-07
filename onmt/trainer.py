@@ -68,12 +68,13 @@ def build_trainer(opt, model, fields, optim, data_type,
     gpu_rank = opt.gpu_rank
     gpu_verbose_level = opt.gpu_verbose_level
     report_bleu=opt.report_bleu
+    save_valid=(opt.save_model+"_tmp" if opt.save_valid is None else opt.save_valid, opt.save_valid is not None)
 
     report_manager = onmt.utils.build_report_manager(opt)
     trainer = onmt.Trainer(model, train_losses, valid_losses, optim, trunc_size,
                            shard_size, data_type, norm_method,
                            grad_accum_count, n_gpu, gpu_rank,
-                           gpu_verbose_level, report_manager, report_bleu,
+                           gpu_verbose_level, report_manager, report_bleu, save_valid,
                            opt.use_attention_bridge, model_saver=model_saver)
     return trainer
 
@@ -98,6 +99,9 @@ class Trainer(object):
             grad_accum_count(int): accumulate gradients this many times.
             report_manager(:obj:`onmt.utils.ReportMgrBase`):
                 the object that creates reports, or None
+            report_bleu(bool): True, if validation BLEU should be reported
+            save_valid(tuple(str,bool)): validation translation file prefix;
+                True, if validation translations should not be discarded
             model_saver(:obj:`onmt.models.ModelSaverBase`): the saver is
                 used to save a checkpoint.
                 Thus nothing will be saved if this parameter is None
@@ -106,7 +110,7 @@ class Trainer(object):
     def __init__(self, model, train_losses, valid_losses, optim,
                  trunc_size=0, shard_size=32, data_type='text',
                  norm_method="sents", grad_accum_count=1, n_gpu=1, gpu_rank=1,
-                 gpu_verbose_level=0, report_manager=None, report_bleu=None,
+                 gpu_verbose_level=0, report_manager=None, report_bleu=None, save_valid=None,
                  use_attention_bridge=False, model_saver=None):
         # Basic attributes.
         self.model = model
@@ -124,6 +128,7 @@ class Trainer(object):
         self.report_manager = report_manager
         self.model_saver = model_saver
         self.report_bleu = report_bleu
+        self.save_valid_prefix, self.save_valid = save_valid
         self.use_attention_bridge = use_attention_bridge
         self.last_model  = None
 
@@ -243,7 +248,13 @@ class Trainer(object):
                                 logger.info('GpuRank %d: validate step %d'
                                             % (self.gpu_rank, step))
                             valid_iter = valid_iter_fct()
-                            valid_stats = self.validate(valid_iter, src_tgt)
+                            src_tmp = "%s_%s-%s.src.txt" % \
+                                          (self.save_valid_prefix, src_lang, tgt_lang)
+                            tgt_tmp = "%s_%s-%s.tgt.txt" % \
+                                          (self.save_valid_prefix, src_lang, tgt_lang)
+                            valid_filename = "%s_%s-%s_%d.txt" % \
+                                          (self.save_valid_prefix, src_lang, tgt_lang, step)
+                            valid_stats = self.validate(valid_iter, src_tgt, src_tmp=src_tmp, tgt_tmp=tgt_tmp)
                             if self.gpu_verbose_level > 0:
                                 logger.info('GpuRank %d: gather valid stat \
                                             step %d' % (self.gpu_rank, step))
@@ -259,12 +270,11 @@ class Trainer(object):
                                 import argparse
                                 parser = argparse.ArgumentParser(prog = 'translate.py', 
                                                             description='train.py')
-                                src_tmp = 'src.tmp'
-                                out_tmp = 'out.tmp'
+
                                 onmt.opts.translate_opts(parser)
                                 dummy_opt = parser.parse_known_args(['-model', self.last_model,
                                                             '-src', src_tmp,
-                                                            '-output', out_tmp ])[0]
+                                                            '-output', valid_filename ])[0]
                                 dummy_opt.use_attention_bridge = self.use_attention_bridge
                                 dummy_opt.src_lang, dummy_opt.tgt_lang = src_tgt
 
@@ -275,12 +285,12 @@ class Trainer(object):
                                                      batch_size=valid_iter.batch_size,
                                                      attn_debug=False)
                                 #report BLEU
-                                import subprocess
-                                msg = translator._report_bleu('tgt.tmp')
+                                msg = translator._report_bleu(tgt_tmp)
                                 logger.info(msg)
-                                import os
-                                for file in ['src.tmp','tgt.tmp','out.tmp']:
-                                    os.remove(file)
+                                if not self.save_valid:
+                                    import os
+                                    for file in [src_tmp,tgt_tmp,valid_filename]:
+                                        os.remove(file)
 
 
 
@@ -296,7 +306,7 @@ class Trainer(object):
 
         return total_stats
 
-    def validate(self, valid_iter, src_tgt):
+    def validate(self, valid_iter, src_tgt, src_tmp, tgt_tmp):
         """ Validate model.
             valid_iter: validate data iterator
         Returns:
@@ -314,10 +324,10 @@ class Trainer(object):
                 exs_src = [tuple(x.encode("utf-8") for x in sent.src) for sent in batch.dataset.examples]
                 exs_tgt = [tuple(x.encode("utf-8") for x in sent.tgt) for sent in batch.dataset.examples]
                 # write tmp files
-                with open('src.tmp', "w") as output:
+                with open(src_tmp, "w") as output:
                     writer = csv.writer(output, lineterminator='\n', delimiter=" ", quotechar='|')
                     writer.writerows(exs_src)
-                with open('tgt.tmp', "w") as output:
+                with open(tgt_tmp, "w") as output:
                     writer = csv.writer(output, lineterminator='\n', delimiter=" ", quotechar='|')
                     writer.writerows(exs_tgt)
 

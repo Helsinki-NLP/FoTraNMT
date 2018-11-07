@@ -422,6 +422,10 @@ def train_opts(parser):
     group.add_argument('-report_bleu', action='store_true',
                        help="""Report bleu score after validation,
                        call tools/multi-bleu.perl on command line""")
+    group.add_argument('-save_valid', default=None,
+                       help="""Validation translation filename prefix. Optional. If given, the 
+                       translation will be saved as <save_valid>_SRC-TGT_N.txt where N is the number
+                       of steps, SRC and TGT is source and target.""")
     group.add_argument('-init_decoder', type=str, default="rnn_final_state",
                        choices=['rnn_final_state', 'attention_matrix'],
                        help="""Method to initialize decoder. With the final state
