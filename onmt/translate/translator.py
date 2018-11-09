@@ -564,9 +564,11 @@ class Translator(object):
             enc_states, memory_bank = self.model.attention_bridge(memory_bank)
         
         # Raul: implement init_decoder_states for when -init_decoder flag is 'attention_matrix' while training
-        dec_states = self.model.decoders[self.model.decoder_ids[self.tgt_lang]].init_decoder_state(
-            src, memory_bank, enc_states)
-        #dec_states = self.model.attention_bridge.init_decoder_state(src, memory_bank, enc_states)
+        if self.model.init_decoder != "attention_matrix":
+            dec_states = self.model.decoders[self.model.decoder_ids[self.tgt_lang]].init_decoder_state(
+                src, memory_bank, enc_states)
+        else:
+            dec_states = self.model.attention_bridge.init_decoder_state(src, memory_bank, enc_states)
 
 
 
