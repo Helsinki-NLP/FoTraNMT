@@ -3,7 +3,7 @@ This is an OpenNMT-py fork developed by the NLP group at University of Helsinki.
 In this branch we developed features for multilingual & multimodal machine translation enabled by parallel training of independent encoders and decoders connected via an inner-attention layer. 
 
 More detail on the arquitecture can be fount in [this article](https://www.aclweb.org/anthology/2020.cl-2.5)
-and on the introduction of audio processing features in [this other article](https://www.aclweb.org/anthology/2020.iwslt-1.10). See master branch of this fork for documentation of OpenNMT-py functionalities or [their offical repo](https://github.com/OpenNMT/OpenNMT-py) for more updated information.
+and on the introduction of audio processing features in [this other article](https://www.aclweb.org/anthology/2020.iwslt-1.10). See [the master branch of this fork](https://github.com/Helsinki-NLP/OpenNMT-py/tree/master) for documentation of OpenNMT-py functionalities or [their offical repo](https://github.com/OpenNMT/OpenNMT-py) for more updated information.
 
 ### Requirements & Instalation 
 You need to clone this repo
