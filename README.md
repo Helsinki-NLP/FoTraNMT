@@ -1,3 +1,41 @@
+# About this branch
+This is an OpenNMT-py fork developed by the NLP group at University of Helsinki.
+In this branch we developed features for multilingual & multimodal machine translation enabled by parallel training of independent encoders and decoders connected via an inner-attention layer. 
+
+More detail on the arquitecture can be fount in [this article](https://www.aclweb.org/anthology/2020.cl-2.5)
+and on the introduction of audio processing features in [this other article](https://www.aclweb.org/anthology/2020.iwslt-1.10). See master branch of this fork for documentation of OpenNMT-py functionalities or [their offical repo](https://github.com/OpenNMT/OpenNMT-py) for more updated information.
+
+### Requirements & Instalation 
+You need to clone this repo
+```bash
+git clone --branch att-brg https://github.com/Helsinki-NLP/OpenNMT-py.git
+cd OpenNMT-py
+```
+We strongly recommend to make the setup in a virtual environment. 
+This is done by:
+```bash
+python3 -m pip install --user --upgrade pip
+python3 -m pip install --user virtualenv
+python3 -m venv env
+source env/bin/activate
+```
+_You can confirm you’re in the virtual environment by checking the location of your Python interpreter, it should point to the env directory:_
+```bash
+which python
+pip install --upgrade pip
+```
+Now that you’re in your virtual environment you can install packages without worrying too much about version control.
+
+First you need to have installed [`torch`](https://pytorch.org/get-started/locally/) according to your system requirements (which can be checked using `nvidia-smi`)
+```bash
+python3 -m pip install torch torchvision
+```
+
+After installing pytorch, you can run: 
+```bash
+pip install -r requirements.txt
+```
+
 # Hands-on example
 
 The following scripts require subword-nmt and sacrebleu.
@@ -28,168 +66,26 @@ After the training is completed, we can evaluate the model on a reference test.
 bash test_example.sh
 ```
 
-
-# OpenNMT-py: Open-Source Neural Machine Translation
-
-[![Build Status](https://travis-ci.org/OpenNMT/OpenNMT-py.svg?branch=master)](https://travis-ci.org/OpenNMT/OpenNMT-py)
-[![Run on FH](https://img.shields.io/badge/Run%20on-FloydHub-blue.svg)](https://floydhub.com/run?template=https://github.com/OpenNMT/OpenNMT-py)
-
-This is a [Pytorch](https://github.com/pytorch/pytorch)
-port of [OpenNMT](https://github.com/OpenNMT/OpenNMT),
-an open-source (MIT) neural machine translation system. It is designed to be research friendly to try out new ideas in translation, summary, image-to-text, morphology, and many other domains. Some companies have proven the code to be production ready.
-
-We love contributions. Please consult the Issues page for any [Contributions Welcome](https://github.com/OpenNMT/OpenNMT-py/issues?q=is%3Aissue+is%3Aopen+label%3A%22contributions+welcome%22) tagged post. 
-
-<center style="padding: 40px"><img width="70%" src="http://opennmt.github.io/simple-attn.png" /></center>
-
-Before raising an issue, make sure you read the requirements and the documentation examples.
-
-Unless there is a bug, please use the [Forum](http://forum.opennmt.net) or [Gitter](https://gitter.im/OpenNMT/OpenNMT-py) to ask questions.
-
-
-Table of Contents
-=================
-  * [Full Documentation](http://opennmt.net/OpenNMT-py/)
-  * [Requirements](#requirements)
-  * [Features](#features)
-  * [Quickstart](#quickstart)
-  * [Run on FloydHub](#run-on-floydhub)
-  * [Acknowledgements](#acknowledgements)
-  * [Citation](#citation)
-
-## Requirements
-
-All dependencies can be installed via:
-
-```bash
-pip install -r requirements.txt
-```
-
-NOTE: If you have MemoryError in the install try to use: 
-
-```bash
-pip install -r requirements.txt --no-cache-dir
-```
-Note that we currently only support PyTorch 1.1 (should work with 1.0)
-
-## Features
-
-- [data preprocessing](http://opennmt.net/OpenNMT-py/options/preprocess.html)
-- [Inference (translation) with batching and beam search](http://opennmt.net/OpenNMT-py/options/translate.html)
-- [Multiple source and target RNN (lstm/gru) types and attention (dotprod/mlp) types](http://opennmt.net/OpenNMT-py/options/train.html#model-encoder-decoder)
-- [TensorBoard](http://opennmt.net/OpenNMT-py/options/train.html#logging)
-- [Source word features](http://opennmt.net/OpenNMT-py/options/train.html#model-embeddings)
-- [Pretrained Embeddings](http://opennmt.net/OpenNMT-py/FAQ.html#how-do-i-use-pretrained-embeddings-e-g-glove)
-- [Copy and Coverage Attention](http://opennmt.net/OpenNMT-py/options/train.html#model-attention)
-- [Image-to-text processing](http://opennmt.net/OpenNMT-py/im2text.html)
-- [Speech-to-text processing](http://opennmt.net/OpenNMT-py/speech2text.html)
-- ["Attention is all you need"](http://opennmt.net/OpenNMT-py/FAQ.html#how-do-i-use-the-transformer-model)
-- [Multi-GPU](http://opennmt.net/OpenNMT-py/FAQ.html##do-you-support-multi-gpu)
-- Inference time loss functions.
-- [Conv2Conv convolution model]
-- SRU "RNNs faster than CNN" paper
-- FP16 training (mixed-precision with Apex)
-
-## Quickstart
-
-[Full Documentation](http://opennmt.net/OpenNMT-py/)
-
-
-### Step 1: Preprocess the data
-
-```bash
-python preprocess.py -train_src data/src-train.txt -train_tgt data/tgt-train.txt -valid_src data/src-val.txt -valid_tgt data/tgt-val.txt -save_data data/demo
-```
-
-We will be working with some example data in `data/` folder.
-
-The data consists of parallel source (`src`) and target (`tgt`) data containing one sentence per line with tokens separated by a space:
-
-* `src-train.txt`
-* `tgt-train.txt`
-* `src-val.txt`
-* `tgt-val.txt`
-
-Validation files are required and used to evaluate the convergence of the training. It usually contains no more than 5000 sentences.
-
-
-After running the preprocessing, the following files are generated:
-
-* `demo.train.pt`: serialized PyTorch file containing training data
-* `demo.valid.pt`: serialized PyTorch file containing validation data
-* `demo.vocab.pt`: serialized PyTorch file containing vocabulary data
-
-
-Internally the system never touches the words themselves, but uses these indices.
-
-### Step 2: Train the model
-
-```bash
-python train.py -data data/demo -save_model demo-model
-```
-
-The main train command is quite simple. Minimally it takes a data file
-and a save file.  This will run the default model, which consists of a
-2-layer LSTM with 500 hidden units on both the encoder/decoder.
-If you want to train on GPU, you need to set, as an example:
-CUDA_VISIBLE_DEVICES=1,3
-`-world_size 2 -gpu_ranks 0 1` to use (say) GPU 1 and 3 on this node only.
-To know more about distributed training on single or multi nodes, read the FAQ section.
-
-### Step 3: Translate
-
-```bash
-python translate.py -model demo-model_acc_XX.XX_ppl_XXX.XX_eX.pt -src data/src-test.txt -output pred.txt -replace_unk -verbose
-```
-
-Now you have a model which you can use to predict on new data. We do this by running beam search. This will output predictions into `pred.txt`.
-
-!!! note "Note"
-    The predictions are going to be quite terrible, as the demo dataset is small. Try running on some larger datasets! For example you can download millions of parallel sentences for [translation](http://www.statmt.org/wmt16/translation-task.html) or [summarization](https://github.com/harvardnlp/sent-summary).
-
-## Alternative: Run on FloydHub
-
-[![Run on FloydHub](https://static.floydhub.com/button/button.svg)](https://floydhub.com/run?template=https://github.com/OpenNMT/OpenNMT-py)
-
-Click this button to open a Workspace on [FloydHub](https://www.floydhub.com/?utm_medium=readme&utm_source=opennmt-py&utm_campaign=jul_2018) for training/testing your code.
-
-
-## Pretrained embeddings (e.g. GloVe)
-
-Please see the FAQ: [How to use GloVe pre-trained embeddings in OpenNMT-py](http://opennmt.net/OpenNMT-py/FAQ.html#how-do-i-use-pretrained-embeddings-e-g-glove)
-
-## Pretrained Models
-
-The following pretrained models can be downloaded and used with translate.py.
-
-http://opennmt.net/Models-py/
-
-## Acknowledgements
-
-OpenNMT-py is run as a collaborative open-source project.
-The original code was written by [Adam Lerer](http://github.com/adamlerer) (NYC) to reproduce OpenNMT-Lua using Pytorch.
-
-Major contributors are:
-[Sasha Rush](https://github.com/srush) (Cambridge, MA)
-[Vincent Nguyen](https://github.com/vince62s) (Ubiqus)
-[Ben Peters](http://github.com/bpopeters) (Lisbon)
-[Sebastian Gehrmann](https://github.com/sebastianGehrmann) (Harvard NLP)
-[Yuntian Deng](https://github.com/da03) (Harvard NLP)
-[Guillaume Klein](https://github.com/guillaumekln) (Systran)
-[Paul Tardy](https://github.com/pltrdy) (Ubiqus / Lium)
-[François Hernandez](https://github.com/francoishernandez) (Ubiqus)
-[Jianyu Zhan](http://github.com/jianyuzhan) (Shanghai)
-[Dylan Flaute](http://github.com/flauted (University of Dayton)
-and more !
-
-OpentNMT-py belongs to the OpenNMT project along with OpenNMT-Lua and OpenNMT-tf.
-
-## Citation
-
-[OpenNMT: Neural Machine Translation Toolkit](https://arxiv.org/pdf/1805.11462)
-
+# References
+If you use this work, please consider citing the work it builds up on:
+[Introduction to the architecture](https://www.aclweb.org/anthology/2020.cl-2.5)
+```latex
+@article{vazquez-etal-2020-systematic,
+    title = "A Systematic Study of Inner-Attention-Based Sentence Representations in Multilingual Neural Machine Translation",
+    author = {V{\'a}zquez, Ra{\'u}l  and
+      Raganato, Alessandro  and
+      Creutz, Mathias  and
+      Tiedemann, J{\"o}rg},
+    journal = "Computational Linguistics",
+    volume = "46",
+    number = "2",
+    month = jun,
+    year = "2020",
+    url = "https://www.aclweb.org/anthology/2020.cl-2.5",
+    doi = "10.1162/coli_a_00377",
+    pages = "387--424"
+```    
 [OpenNMT technical report](https://doi.org/10.18653/v1/P17-4012)
-
 ```
 @inproceedings{opennmt,
   author    = {Guillaume Klein and
@@ -202,5 +98,23 @@ OpentNMT-py belongs to the OpenNMT project along with OpenNMT-Lua and OpenNMT-tf
   year      = {2017},
   url       = {https://doi.org/10.18653/v1/P17-4012},
   doi       = {10.18653/v1/P17-4012}
+}
+```
+[Audio Precessing Features](https://www.aclweb.org/anthology/2020.iwslt-1.10)
+```latex
+@inproceedings{vazquez-etal-2020-university,
+    title = "The {U}niversity of {H}elsinki Submission to the {IWSLT}2020 Offline {S}peech{T}ranslation Task",
+    author = {V{\'a}zquez, Ra{\'u}l  and
+      Aulamo, Mikko  and
+      Sulubacak, Umut  and
+      Tiedemann, J{\"o}rg},
+    booktitle = "Proceedings of the 17th International Conference on Spoken Language Translation",
+    month = jul,
+    year = "2020",
+    address = "Online",
+    publisher = "Association for Computational Linguistics",
+    url = "https://www.aclweb.org/anthology/2020.iwslt-1.10",
+    doi = "10.18653/v1/2020.iwslt-1.10",
+    pages = "95--102"
 }
 ```
