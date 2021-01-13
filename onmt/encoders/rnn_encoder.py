@@ -56,7 +56,7 @@ class RNNEncoder(EncoderBase):
             opt.brnn,
             opt.enc_layers,
             opt.enc_rnn_size,
-            opt.dropout[0] if type(opt.dropout) is list else opt.dropout,
+            opt.dropout,
             embeddings,
             opt.bridge)
 
@@ -113,6 +113,3 @@ class RNNEncoder(EncoderBase):
         else:
             outs = bottle_hidden(self.bridge[0], hidden)
         return outs
-
-    def update_dropout(self, dropout):
-        self.rnn.dropout = dropout

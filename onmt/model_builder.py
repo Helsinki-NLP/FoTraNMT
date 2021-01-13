@@ -8,7 +8,6 @@ import torch.nn as nn
 from torch.nn.init import xavier_uniform_
 
 import onmt.inputters as inputters
-from   onmt.inputters.audio_dataset import AudioSeqField
 import onmt.modules
 from onmt.encoders import str2enc
 
@@ -45,7 +44,7 @@ def build_embeddings(opt, text_field, for_encoder=True):
         feat_merge=opt.feat_merge,
         feat_vec_exponent=opt.feat_vec_exponent,
         feat_vec_size=opt.feat_vec_size,
-        dropout=opt.dropout[0] if type(opt.dropout) is list else opt.dropout,
+        dropout=opt.dropout,
         word_padding_idx=word_padding_idx,
         feat_padding_idx=feat_pad_indices,
         word_vocab_size=num_word_embeddings,
@@ -78,33 +77,6 @@ def build_decoder(opt, embeddings):
                else opt.decoder_type
     return str2dec[dec_type].from_opt(opt, embeddings)
 
-def load_test_multitask_model(opt, model_path=None):
-    if model_path is None:
-        model_path = opt.models[0]
-    checkpoint = torch.load(model_path,
-                            map_location=lambda storage, loc: storage)
-    model = checkpoint['whole_model']
-    vocab = checkpoint['vocab']
-    src_tgtpair = opt.src_lang+'-'+opt.tgt_lang
-    vocab = vocab if type(vocab) is dict else vocab[src_tgtpair]
-    if inputters.old_style_vocab(vocab):
-        fields = inputters.load_old_vocab(
-            vocab, opt.data_type, dynamic_dict=model_opt.copy_attn
-        )
-    else:
-        fields = vocab
-    
-    if opt.data_type == 'audio' and not (isinstance(checkpoint.get('vocab')[src_tgtpair]['src'], AudioSeqField)):
-        vocab_path = "/home/vazquezj/Documents/iwslt2019/_ready_to_train/onmt_ready/ENaudio_DEtext/data"
-        fields = torch.load(vocab_path + '.vocab.pt')
-
-    model_opt = ArgumentParser.ckpt_model_opts(checkpoint['opt'])
-    device = torch.device("cuda" if use_gpu(opt) else "cpu")
-    model.to(device)
-
-    model.eval()
-    
-    return fields, model, model_opt
 
 def load_test_model(opt, model_path=None):
     if model_path is None:
@@ -131,49 +103,6 @@ def load_test_model(opt, model_path=None):
     model.generator.eval()
     return fields, model, model_opt
 
-def build_embeddings_then_encoder(model_opt, fields):
-
-    # Build embeddings.
-    if model_opt.model_type == "text":
-        src_field = fields["src"]
-        src_emb = build_embeddings(model_opt, src_field)
-    else:
-        src_emb = None
-
-    # Build encoder.
-    encoder = build_encoder(model_opt, src_emb)
-
-    return encoder, src_emb
-
-def build_decoder_and_generator(model_opt, fields):
-
-    # Build decoder.
-    tgt_field = fields["tgt"]
-    tgt_emb = build_embeddings(model_opt, tgt_field, for_encoder=False)
-
-    decoder = build_decoder(model_opt, tgt_emb)
-
-    # Build Generator.
-    if not model_opt.copy_attn:
-        if model_opt.generator_function == "sparsemax":
-            gen_func = onmt.modules.sparse_activations.LogSparsemax(dim=-1)
-        else:
-            gen_func = nn.LogSoftmax(dim=-1)
-        generator = nn.Sequential(
-            nn.Linear(model_opt.dec_rnn_size,
-                      len(fields["tgt"].base_field.vocab)),
-            Cast(torch.float32),
-            gen_func
-        )
-        if model_opt.share_decoder_embeddings:
-            generator[0].weight = decoder.embeddings.word_lut.weight
-    else:
-        tgt_base_field = fields["tgt"].base_field
-        vocab_size = len(tgt_base_field.vocab)
-        pad_idx = tgt_base_field.vocab.stoi[tgt_base_field.pad_token]
-        generator = CopyGenerator(model_opt.dec_rnn_size, vocab_size, pad_idx)
-
-    return decoder, generator, tgt_emb
 
 def build_base_model(model_opt, fields, gpu, checkpoint=None, gpu_id=None):
     """Build a model from opts.
@@ -247,41 +176,41 @@ def build_base_model(model_opt, fields, gpu, checkpoint=None, gpu_id=None):
         generator = CopyGenerator(model_opt.dec_rnn_size, vocab_size, pad_idx)
 
     # Load the model states from checkpoint or initialize them.
-    #if checkpoint is not None:
-    #    # This preserves backward-compat for models using customed layernorm
-    #    def fix_key(s):
-    #        s = re.sub(r'(.*)\.layer_norm((_\d+)?)\.b_2',
-    #                   r'\1.layer_norm\2.bias', s)
-    #        s = re.sub(r'(.*)\.layer_norm((_\d+)?)\.a_2',
-    #                   r'\1.layer_norm\2.weight', s)
-    #        return s
+    if checkpoint is not None:
+        # This preserves backward-compat for models using customed layernorm
+        def fix_key(s):
+            s = re.sub(r'(.*)\.layer_norm((_\d+)?)\.b_2',
+                       r'\1.layer_norm\2.bias', s)
+            s = re.sub(r'(.*)\.layer_norm((_\d+)?)\.a_2',
+                       r'\1.layer_norm\2.weight', s)
+            return s
 
-    #    checkpoint['model'] = {fix_key(k): v
-    #                           for k, v in checkpoint['model'].items()}
-    #    # end of patch for backward compatibility
+        checkpoint['model'] = {fix_key(k): v
+                               for k, v in checkpoint['model'].items()}
+        # end of patch for backward compatibility
 
-    #    model.load_state_dict(checkpoint['model'], strict=False)
-    #    generator.load_state_dict(checkpoint['generator'], strict=False)
-    #else:
-    #    if model_opt.param_init != 0.0:
-    #        for p in model.parameters():
-    #            p.data.uniform_(-model_opt.param_init, model_opt.param_init)
-    #        for p in generator.parameters():
-    #            p.data.uniform_(-model_opt.param_init, model_opt.param_init)
-    #    if model_opt.param_init_glorot:
-    #        for p in model.parameters():
-    #            if p.dim() > 1:
-    #                xavier_uniform_(p)
-    #        for p in generator.parameters():
-    #            if p.dim() > 1:
-    #                xavier_uniform_(p)
+        model.load_state_dict(checkpoint['model'], strict=False)
+        generator.load_state_dict(checkpoint['generator'], strict=False)
+    else:
+        if model_opt.param_init != 0.0:
+            for p in model.parameters():
+                p.data.uniform_(-model_opt.param_init, model_opt.param_init)
+            for p in generator.parameters():
+                p.data.uniform_(-model_opt.param_init, model_opt.param_init)
+        if model_opt.param_init_glorot:
+            for p in model.parameters():
+                if p.dim() > 1:
+                    xavier_uniform_(p)
+            for p in generator.parameters():
+                if p.dim() > 1:
+                    xavier_uniform_(p)
 
-    #    if hasattr(model.encoder, 'embeddings'):
-    #        model.encoder.embeddings.load_pretrained_vectors(
-    #            model_opt.pre_word_vecs_enc)
-    #    if hasattr(model.decoder, 'embeddings'):
-    #        model.decoder.embeddings.load_pretrained_vectors(
-    #            model_opt.pre_word_vecs_dec)
+        if hasattr(model.encoder, 'embeddings'):
+            model.encoder.embeddings.load_pretrained_vectors(
+                model_opt.pre_word_vecs_enc)
+        if hasattr(model.decoder, 'embeddings'):
+            model.decoder.embeddings.load_pretrained_vectors(
+                model_opt.pre_word_vecs_dec)
 
     model.generator = generator
     model.to(device)
@@ -290,58 +219,9 @@ def build_base_model(model_opt, fields, gpu, checkpoint=None, gpu_id=None):
 
     return model
 
-def build_base_multitask_model(model_opt, fields, gpu, encoders, decoders, generators, src_vocabs, tgt_vocabs, checkpoint=None):
-    """
-    Args:
-        model_opt: the option loaded from checkpoint.
-        fields: `Field` objects for the model.
-        gpu(bool): whether to use gpu.
-        checkpoint: the model gnerated by train phase, or a resumed snapshot
-                    model from a stopped training.
-    Returns:
-        the NMTModel.
-    """
-    for model_type in model_opt.model_type:
-        assert model_type in ["text", "img", "audio", "audiotrf"], \
-                ("Unsupported model type %s" % (model_opt.model_type))
 
-    device = torch.device("cuda" if gpu else "cpu")
-
-    model = onmt.models.model.MultiTaskModel(encoders, decoders, model_opt)
-    model.model_type = model_opt.model_type
-
-    model.src_vocabs = src_vocabs
-    model.tgt_vocabs = tgt_vocabs
-
-    # Load the model states from checkpoint or initialize them.
-    if checkpoint is not None:
-        model.load_state_dict(checkpoint['model'])
-        #generator.load_state_dict(checkpoint['generator'])
-    else:
-        logger.info("Initializing model parameters")
-        if model_opt.param_init != 0.0:
-            for p in model.parameters():
-                p.data.uniform_(-model_opt.param_init, model_opt.param_init)
-            for generator in generators.values():
-                for p in generator.parameters():
-                    p.data.uniform_(-model_opt.param_init, model_opt.param_init)
-        if model_opt.param_init_glorot:
-            for p in model.parameters():
-                if p.dim() > 1:
-                    xavier_uniform_(p)
-            for generator in generators.values():
-                for p in generator.parameters():
-                    if p.dim() > 1:
-                        xavier_uniform_(p)
-
-    model.generators = nn.ModuleList(generators.values())
-
-    model.to(device)
-
-    return model
-
-def build_model(model_opt, opt, fields, encoders, decoders, generators, src_vocabs, tgt_vocabs, checkpoint):
+def build_model(model_opt, opt, fields, checkpoint):
     logger.info('Building model...')
-    model = build_base_multitask_model(model_opt, fields, use_gpu(opt), encoders, decoders, generators, src_vocabs, tgt_vocabs, checkpoint)
+    model = build_base_model(model_opt, fields, use_gpu(opt), checkpoint)
     logger.info(model)
     return model

@@ -8,26 +8,13 @@ from torchtext.data import Field
 from onmt.inputters.datareader_base import DataReaderBase
 
 # imports of datatype-specific dependencies
-
 try:
     import torchaudio
     import librosa
     import numpy as np
-    import math
 except ImportError:
     torchaudio, librosa, np = None, None, None
 
-
-def stack_mel_filters(mel_fbanks,n_mels,n_stacked_mels):
-    full_stacked_feats = math.floor(mel_fbanks.shape[1]/n_stacked_mels)
-    stacked_mel_fbanks = []
-    for i in range(full_stacked_feats):
-        stacked_mel_fbanks.append( mel_fbanks.t()[n_stacked_mels*(i):n_stacked_mels*(i)+n_stacked_mels].flatten() )
-            
-    if (full_stacked_feats % n_stacked_mels > 0):
-        stacked_mel_fbanks.append( mel_fbanks.t()[-n_stacked_mels:].flatten() )
-
-    return torch.stack(stacked_mel_fbanks).t()
 
 class AudioDataReader(DataReaderBase):
     """Read audio data from disk.
@@ -49,7 +36,7 @@ class AudioDataReader(DataReaderBase):
     """
 
     def __init__(self, sample_rate=0, window_size=0, window_stride=0,
-                 window=None, normalize_audio=True, truncate=None, n_mels=80, n_stacked_mels=1):
+                 window=None, normalize_audio=True, truncate=None):
         self._check_deps()
         self.sample_rate = sample_rate
         self.window_size = window_size
@@ -57,20 +44,17 @@ class AudioDataReader(DataReaderBase):
         self.window = window
         self.normalize_audio = normalize_audio
         self.truncate = truncate
-        self.n_mels = n_mels
-        self.n_stacked_mels = n_stacked_mels
 
     @classmethod
     def from_opt(cls, opt):
         return cls(sample_rate=opt.sample_rate, window_size=opt.window_size,
-                   window_stride=opt.window_stride, window=opt.window, n_mels=opt.n_mels, n_stacked_mels=opt.n_stacked_mels)
+                   window_stride=opt.window_stride, window=opt.window)
 
     @classmethod
     def _check_deps(cls):
         if any([torchaudio is None, librosa is None, np is None]):
             cls._raise_missing_dep(
                 "torchaudio", "librosa", "numpy")
-    
 
     def extract_features(self, audio_path):
         # torchaudio loading options recently changed. It's probably
@@ -96,20 +80,18 @@ class AudioDataReader(DataReaderBase):
         n_fft = int(self.sample_rate * self.window_size)
         win_length = n_fft
         hop_length = int(self.sample_rate * self.window_stride)
-        # Mel-scale fbanks
-
-        mel_fbanks = librosa.feature.melspectrogram(sound, n_fft=n_fft, hop_length=hop_length,
-                        win_length=win_length, window=self.window, n_mels = self.n_mels)
-        mel_fbanks = torch.FloatTensor(mel_fbanks)
+        # STFT
+        d = librosa.stft(sound, n_fft=n_fft, hop_length=hop_length,
+                         win_length=win_length, window=self.window)
+        spect, _ = librosa.magphase(d)
+        spect = np.log1p(spect)
+        spect = torch.FloatTensor(spect)
         if self.normalize_audio:
-            mean = mel_fbanks.mean()
-            std = mel_fbanks.std()
-            mel_fbanks.add_(-mean)
-            mel_fbanks.div_(std)
-        if self.n_stacked_mels > 1:
-            mel_fbanks = stack_mel_filters(mel_fbanks, self.n_mels, self.n_stacked_mels)
-
-        return mel_fbanks
+            mean = spect.mean()
+            std = spect.std()
+            spect.add_(-mean)
+            spect.div_(std)
+        return spect
 
     def read(self, data, side, src_dir=None):
         """Read data into dicts.

@@ -31,7 +31,7 @@ class CNNEncoder(EncoderBase):
             opt.enc_layers,
             opt.enc_rnn_size,
             opt.cnn_kernel_width,
-            opt.dropout[0] if type(opt.dropout) is list else opt.dropout,
+            opt.dropout,
             embeddings)
 
     def forward(self, input, lengths=None, hidden=None):
@@ -50,6 +50,3 @@ class CNNEncoder(EncoderBase):
 
         return emb_remap.squeeze(3).transpose(0, 1).contiguous(), \
             out.squeeze(3).transpose(0, 1).contiguous(), lengths
-
-    def update_dropout(self, dropout):
-        self.cnn.dropout.p = dropout

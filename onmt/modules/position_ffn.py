@@ -35,7 +35,3 @@ class PositionwiseFeedForward(nn.Module):
         inter = self.dropout_1(self.relu(self.w_1(self.layer_norm(x))))
         output = self.dropout_2(self.w_2(inter))
         return output + x
-
-    def update_dropout(self, dropout):
-        self.dropout_1.p = dropout
-        self.dropout_2.p = dropout
