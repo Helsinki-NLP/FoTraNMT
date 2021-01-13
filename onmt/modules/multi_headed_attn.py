@@ -227,6 +227,3 @@ class MultiHeadedAttention(nn.Module):
             .contiguous()
 
         return output, top_attn
-
-    def update_dropout(self, dropout):
-        self.dropout.p = dropout

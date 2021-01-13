@@ -59,8 +59,8 @@ def model_opts(parser):
 
     # Encoder-Decoder Options
     group = parser.add_argument_group('Model- Encoder-Decoder')
-    group.add('--model_type', '-model_type', nargs='+', type=str, default='text',
-              choices=['text', 'img', 'audio', 'audiotrf'],
+    group.add('--model_type', '-model_type', default='text',
+              choices=['text', 'img', 'audio'],
               help="Type of source model to use. Allows "
                    "the system to incorporate non-text inputs. "
                    "Options are [text|img|audio].")
@@ -68,7 +68,7 @@ def model_opts(parser):
               choices=['fp32', 'fp16'],
               help='Data type of the model.')
 
-    group.add('--encoder_type', '-encoder_type', nargs='+', type=str, default='rnn',
+    group.add('--encoder_type', '-encoder_type', type=str, default='rnn',
               choices=['rnn', 'brnn', 'mean', 'transformer', 'cnn'],
               help="Type of encoder layer to use. Non-RNN layers "
                    "are experimental. Options are "
@@ -78,25 +78,26 @@ def model_opts(parser):
               help="Type of decoder layer to use. Non-RNN layers "
                    "are experimental. Options are "
                    "[rnn|transformer|cnn].")
+
     group.add('--layers', '-layers', type=int, default=-1,
               help='Number of layers in enc/dec.')
-    group.add('--enc_layers', '-enc_layers', nargs='+', type=int, default=2,
+    group.add('--enc_layers', '-enc_layers', type=int, default=2,
               help='Number of layers in the encoder')
-    group.add('--dec_layers', '-dec_layers', nargs='+', type=int, default=2,
+    group.add('--dec_layers', '-dec_layers', type=int, default=2,
               help='Number of layers in the decoder')
     group.add('--rnn_size', '-rnn_size', type=int, default=-1,
               help="Size of rnn hidden states. Overwrites "
                    "enc_rnn_size and dec_rnn_size")
-    group.add('--enc_rnn_size', '-enc_rnn_size' , type=int, default=500,
+    group.add('--enc_rnn_size', '-enc_rnn_size', type=int, default=500,
               help="Size of encoder rnn hidden states. "
                    "Must be equal to dec_rnn_size except for "
                    "speech-to-text.")
-    group.add('--dec_rnn_size', '-dec_rnn_size' , type=int, default=500,
+    group.add('--dec_rnn_size', '-dec_rnn_size', type=int, default=500,
               help="Size of decoder rnn hidden states. "
                    "Must be equal to enc_rnn_size except for "
                    "speech-to-text.")
     group.add('--audio_enc_pooling', '-audio_enc_pooling',
-              type=str, nargs='+', default='1',
+              type=str, default='1',
               help="The amount of pooling of audio encoder, "
                    "either the same amount of pooling across all layers "
                    "indicated by a single number, or different amounts of "
@@ -105,9 +106,6 @@ def model_opts(parser):
               help="Size of windows in the cnn, the kernel_size is "
                    "(cnn_kernel_width, 1) in conv layer")
 
-    group.add('--hidden_ab_size', '-hidden_ab_size', type=int, default=2048,
-            help="""Size of attention bridge hidden states""")
-
     group.add('--input_feed', '-input_feed', type=int, default=1,
               help="Feed the context vector at each time step as "
                    "additional input (via concatenation with the word "
@@ -115,7 +113,7 @@ def model_opts(parser):
     group.add('--bridge', '-bridge', action="store_true",
               help="Have an additional layer between the last encoder "
                    "state and the first decoder state")
-    group.add('--rnn_type', '-rnn_type', type=str, nargs='+', default='LSTM',
+    group.add('--rnn_type', '-rnn_type', type=str, default='LSTM',
               choices=['LSTM', 'GRU', 'SRU'],
               action=CheckSRU,
               help="The gate type to use in the RNNs")
@@ -191,12 +189,10 @@ def preprocess_opts(parser):
               help="Type of the source input. "
                    "Options are [text|img|audio].")
 
-    group.add('--train_src', '-train_src', required=True, nargs='+',
-              help="Path(s) to the training source data")
-    group.add('--train_tgt', '-train_tgt', required=True, nargs='+',
-              help="Path(s) to the training target data")
-    group.add('--train_ids', '-train_ids', nargs='+', default=[None],
-              help="ids to name training shards, used for corpus weighting")
+    group.add('--train_src', '-train_src', required=True,
+              help="Path to the training source data")
+    group.add('--train_tgt', '-train_tgt', required=True,
+              help="Path to the training target data")
     group.add('--valid_src', '-valid_src',
               help="Path to the validation source data")
     group.add('--valid_tgt', '-valid_tgt',
@@ -295,12 +291,7 @@ def preprocess_opts(parser):
               help="Window stride for spectrogram in seconds.")
     group.add('--window', '-window', default='hamming',
               help="Window type for spectrogram generation.")
-    group.add('--n_mels', '-n_mels', type=int, default=80,
-            help="Number Mel-scale filterbanks to extract"
-                 "The AudioEncoder will have as input n_mels*n_stacked_mels")
-    group.add('--n_stacked_mels', '-n_stacked_mels', type=int, default=1,
-            help="Number Mel-scale filterbanks to stack"
-                 "The AudioEncoder will have as input n_mels*n_stacked_mels")
+
     # Option most relevant to image input
     group.add('--image_channel_size', '-image_channel_size',
               type=int, default=3,
@@ -313,18 +304,9 @@ def train_opts(parser):
     """ Training and saving options """
 
     group = parser.add_argument_group('General')
-    group.add('--data', '-data', required=True, nargs='+', type=str,
+    group.add('--data', '-data', required=True,
               help='Path prefix to the ".train.pt" and '
                    '".valid.pt" file path from preprocess.py')
-    group.add('--src_tgt', '-src_tgt', required=True, nargs='+',
-            type=str, help="""src and tgt language codes in the form
-            <src>-<tgt>""")
-
-    group.add('--data_ids', '-data_ids', nargs='+', default=[None],
-              help="In case there are several corpora.")
-    group.add('--data_weights', '-data_weights', type=int, nargs='+',
-              default=[1], help="""Weights of different corpora,
-              should follow the same order as in -data_ids.""")
 
     group.add('--save_model', '-save_model', default='model',
               help="Model filename (the model will be saved as "
@@ -366,7 +348,7 @@ def train_opts(parser):
                    "Use 0 to not use initialization")
     group.add('--param_init_glorot', '-param_init_glorot', action='store_true',
               help="Init parameters with xavier_uniform. "
-                   "Required for transformer.")
+                   "Required for transfomer.")
 
     group.add('--train_from', '-train_from', default='', type=str,
               help="If training from a checkpoint then this is the "
@@ -394,25 +376,15 @@ def train_opts(parser):
 
     # Optimization options
     group = parser.add_argument_group('Optimization- Type')
-    group.add('--batch_size', '-batch_size', nargs='+', type=int, default=64,
-              help='Maximum batch size for training.'
-                   'Specify either a single int or 1 per src-tgt')
-    group.add('--batch_type', '-batch_type', nargs='+', default='sents',
+    group.add('--batch_size', '-batch_size', type=int, default=64,
+              help='Maximum batch size for training')
+    group.add('--batch_type', '-batch_type', default='sents',
               choices=["sents", "tokens"],
-              help="Batch grouping for batch_size. Default is sents."
-                   "Tokens will do dynamic batching"
-                   "Specify either a single option or 1 per src-tgt")
-    group.add('--pool_factor', '-pool_factor', type=int, default=8192,
-              help="""Factor used in data loading and batch creations.
-              It will load the equivalent of `pool_factor` batches,
-              sort them by the according `sort_key` to produce
-              homogeneous batches and reduce padding, and yield
-              the produced batches in a shuffled way.
-              Inspired by torchtext's pool mechanism.""")
-    group.add('--normalization', '-normalization', nargs='+', default='sents',
+              help="Batch grouping for batch_size. Standard "
+                   "is sents. Tokens will do dynamic batching")
+    group.add('--normalization', '-normalization', default='sents',
               choices=["sents", "tokens"],
-              help='Normalization method of the gradient.'
-                   "Specify either a single option or 1 per src-tgt")
+              help='Normalization method of the gradient.')
     group.add('--accum_count', '-accum_count', type=int, nargs='+',
               default=[1],
               help="Accumulate gradient this many times. "
@@ -454,10 +426,8 @@ def train_opts(parser):
               help="If the norm of the gradient vector exceeds this, "
                    "renormalize it to have the norm equal to "
                    "max_grad_norm")
-    group.add('--dropout', '-dropout', type=float, default=[0.3], nargs='+',
+    group.add('--dropout', '-dropout', type=float, default=0.3,
               help="Dropout probability; applied in LSTM stacks.")
-    group.add('--dropout_steps', '-dropout_steps', type=int, nargs='+',
-              default=[0], help="Steps at which dropout changes.")
     group.add('--truncated_decoder', '-truncated_decoder', type=int, default=0,
               help="""Truncated bptt.""")
     group.add('--adam_beta1', '-adam_beta1', type=float, default=0.9,
@@ -550,34 +520,13 @@ def train_opts(parser):
               help="Sample rate.")
     group.add('--window_size', '-window_size', type=float, default=.02,
               help="Window size for spectrogram in seconds.")
-    group.add('--n_mels', '-n_mels', type=int, default=80,
-            help="Number Mel-scale filterbanks extracted during prerpocessing"
-                 "The AudioEncoder will have as input n_mels*n_stacked_mels")
-    group.add('--n_stacked_mels', '-n_stacked_mels', type=int, default=1,
-            help="Number Mel-scale filterbanks stacked during preprocessing"
-                  "The AudioEncoder will have as input n_mels*n_stacked_mels")
+
     # Option most relevant to image input
     group.add('--image_channel_size', '-image_channel_size',
               type=int, default=3, choices=[3, 1],
               help="Using grayscale image can training "
                    "model faster and smaller")
 
-    # att_brg options
-    group = parser.add_argument_group('Attention_bridge')
-    group.add('--use_attention_bridge', '-use_attention_bridge',
-            action='store_true', help="""Use self-attention layer between
-            enc and dec""")
-    group.add('--attention_heads', '-attention_heads', type=int, default=4,
-            help="""Number of attention heads in attention bridge""")
-    group.add('--init_decoder', '-init_decoder', type=str, default="rnn_final_state",
-            choices=['rnn_final_state', 'attention_matrix'],
-            help="""Method to initialize decoder. With the final state
-            of the decoder or with the avrg of the attention bridge.
-            IMPORTANT:
-            Must choose attention_matrix if -encoder_type transformer
-            Must chose rnn_final state if -use_attention_bridge is NOT activated """)
-    group.add('--activate_extra_loss', '-activate_extra_loss',
-            action='store_true', help="""Activate extra loss""")
 
 def translate_opts(parser):
     """ Translation / inference options """
@@ -732,36 +681,18 @@ def translate_opts(parser):
               help='Window stride for spectrogram in seconds')
     group.add('--window', '-window', default='hamming',
               help='Window type for spectrogram generation')
-    group.add('--n_mels', '-n_mels', type=int, default=80,
-            help="Number Mel-scale filterbanks extracted during prerpocessing"
-                 "The AudioEncoder will have as input n_mels*n_stacked_mels")
-    group.add('--n_stacked_mels', '-n_stacked_mels', type=int, default=1,
-            help="Number Mel-scale filterbanks stacked during preprocessing"
-                  "The AudioEncoder will have as input n_mels*n_stacked_mels")
+
     # Option most relevant to image input
     group.add('--image_channel_size', '-image_channel_size',
               type=int, default=3, choices=[3, 1],
               help="Using grayscale image can training "
                    "model faster and smaller")
 
-    # att-brg options
-    group = parser.add_argument_group('Attention_bridge')
-    group.add('--use_attention_bridge', '-use_attention_bridge',
-            action='store_true', help="""Use self-attention layer
-            between enc and dec""")
-
-def translate_multimodel(parser):
-    # src and tgt langs for multi-encoder and multi-decoder models
-    group = parser.add_argument_group('Source and Target Languages')
-    group.add('--src_lang', '-src_lang', required=True,
-            help="The 2-character source language code")
-    group.add('--tgt_lang', '-tgt_lang', required=True,
-            help="The 2-character source language code")
-
 
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
 
 class StoreLoggingLevelAction(configargparse.Action):
     """ Convert string to logging level """
@@ -785,6 +716,7 @@ class StoreLoggingLevelAction(configargparse.Action):
         # Get the key 'value' in the dict, or just use 'value'
         level = StoreLoggingLevelAction.LEVELS.get(value, value)
         setattr(namespace, self.dest, level)
+
 
 class DeprecateAction(configargparse.Action):
     """ Deprecate action """

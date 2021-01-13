@@ -151,8 +151,7 @@ class RNNDecoderBase(DecoderBase):
             opt.coverage_attn,
             opt.context_gate,
             opt.copy_attn,
-            opt.dropout[0] if type(opt.dropout) is list
-            else opt.dropout,
+            opt.dropout,
             embeddings,
             opt.reuse_copy_attn,
             opt.copy_attn_type)
@@ -167,25 +166,11 @@ class RNNDecoderBase(DecoderBase):
                                     hidden[1:hidden.size(0):2]], 2)
             return hidden
 
-        #memory bank: [r,bsz,nhid]
-        output = memory_bank.transpose(0, 1).contiguous() # [bsz, r, nhid]
-
-        output = torch.mean(output, 1) #[bsz, nhid]
-        x2 = output.unsqueeze(0) #[bsz*nhid]
-
-        concat = torch.cat(tuple(x2 for i in range(self.num_layers)))
-        tupl = tuple((concat,concat))
-
-        #return RNNDecoderState(self.hidden_size, tupl)
-        self.state["hidden"] = tupl
-
-        """
         if isinstance(encoder_final, tuple):  # LSTM
             self.state["hidden"] = tuple(_fix_enc_hidden(enc_hid)
                                          for enc_hid in encoder_final)
         else:  # GRU
             self.state["hidden"] = (_fix_enc_hidden(encoder_final), )
-        """
 
         # Init the input feed.
         batch_size = self.state["hidden"][0].size(1)
@@ -247,10 +232,6 @@ class RNNDecoderBase(DecoderBase):
                 if type(attns[k]) == list:
                     attns[k] = torch.stack(attns[k])
         return dec_outs, attns
-
-    def update_dropout(self, dropout):
-        self.dropout.p = dropout
-        self.embeddings.update_dropout(dropout)
 
 
 class StdRNNDecoder(RNNDecoderBase):
@@ -446,8 +427,3 @@ class InputFeedRNNDecoder(RNNDecoderBase):
     def _input_size(self):
         """Using input feed by concatenating input with attention vectors."""
         return self.embeddings.embedding_size + self.hidden_size
-
-    def update_dropout(self, dropout):
-        self.dropout.p = dropout
-        self.rnn.dropout.p = dropout
-        self.embeddings.update_dropout(dropout)
