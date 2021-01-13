@@ -7,7 +7,6 @@ import torch
 import torch.nn as nn
 from torch.nn.init import xavier_uniform_
 
-import onmt.inputters as inputters
 import onmt.modules
 from onmt.encoders import str2enc
 
@@ -18,6 +17,7 @@ from onmt.modules.util_class import Cast
 from onmt.utils.misc import use_gpu
 from onmt.utils.logging import logger
 from onmt.utils.parse import ArgumentParser
+from onmt.constants import ModelTask
 
 
 def build_embeddings(opt, text_field, for_encoder=True):
@@ -35,8 +35,8 @@ def build_embeddings(opt, text_field, for_encoder=True):
     num_embs = [len(f.vocab) for _, f in text_field]
     num_word_embeddings, num_feat_embeddings = num_embs[0], num_embs[1:]
 
-    fix_word_vecs = opt.fix_word_vecs_enc if for_encoder \
-        else opt.fix_word_vecs_dec
+    freeze_word_vecs = opt.freeze_word_vecs_enc if for_encoder \
+        else opt.freeze_word_vecs_dec
 
     emb = Embeddings(
         word_vec_size=emb_dim,
@@ -44,13 +44,13 @@ def build_embeddings(opt, text_field, for_encoder=True):
         feat_merge=opt.feat_merge,
         feat_vec_exponent=opt.feat_vec_exponent,
         feat_vec_size=opt.feat_vec_size,
-        dropout=opt.dropout,
+        dropout=opt.dropout[0] if type(opt.dropout) is list else opt.dropout,
         word_padding_idx=word_padding_idx,
         feat_padding_idx=feat_pad_indices,
         word_vocab_size=num_word_embeddings,
         feat_vocab_sizes=num_feat_embeddings,
         sparse=opt.optim == "sparseadam",
-        fix_word_vecs=fix_word_vecs
+        freeze_word_vecs=freeze_word_vecs
     )
     return emb
 
@@ -87,21 +87,79 @@ def load_test_model(opt, model_path=None):
     model_opt = ArgumentParser.ckpt_model_opts(checkpoint['opt'])
     ArgumentParser.update_model_opts(model_opt)
     ArgumentParser.validate_model_opts(model_opt)
-    vocab = checkpoint['vocab']
-    if inputters.old_style_vocab(vocab):
-        fields = inputters.load_old_vocab(
-            vocab, opt.data_type, dynamic_dict=model_opt.copy_attn
-        )
-    else:
-        fields = vocab
+    fields = checkpoint['vocab']
 
     model = build_base_model(model_opt, fields, use_gpu(opt), checkpoint,
                              opt.gpu)
     if opt.fp32:
         model.float()
+    elif opt.int8:
+        if opt.gpu >= 0:
+            raise ValueError(
+                "Dynamic 8-bit quantization is not supported on GPU")
+        torch.quantization.quantize_dynamic(model, inplace=True)
     model.eval()
     model.generator.eval()
     return fields, model, model_opt
+
+
+def build_src_emb(model_opt, fields):
+    # Build embeddings.
+    if model_opt.model_type == "text":
+        src_field = fields["src"]
+        src_emb = build_embeddings(model_opt, src_field)
+    else:
+        src_emb = None
+    return src_emb
+
+
+def build_encoder_with_embeddings(model_opt, fields):
+    # Build encoder.
+    src_emb = build_src_emb(model_opt, fields)
+    encoder = build_encoder(model_opt, src_emb)
+    return encoder, src_emb
+
+
+def build_decoder_with_embeddings(
+    model_opt, fields, share_embeddings=False, src_emb=None
+):
+    # Build embeddings.
+    tgt_field = fields["tgt"]
+    tgt_emb = build_embeddings(model_opt, tgt_field, for_encoder=False)
+
+    if share_embeddings:
+        tgt_emb.word_lut.weight = src_emb.word_lut.weight
+
+    # Build decoder.
+    decoder = build_decoder(model_opt, tgt_emb)
+    return decoder, tgt_emb
+
+
+def build_task_specific_model(model_opt, fields):
+    # Share the embedding matrix - preprocess with share_vocab required.
+    if model_opt.share_embeddings:
+        # src/tgt vocab should be the same if `-share_vocab` is specified.
+        assert (
+            fields["src"].base_field.vocab == fields["tgt"].base_field.vocab
+        ), "preprocess with -share_vocab if you use share_embeddings"
+
+    if model_opt.model_task == ModelTask.SEQ2SEQ:
+        encoder, src_emb = build_encoder_with_embeddings(model_opt, fields)
+        decoder, _ = build_decoder_with_embeddings(
+            model_opt,
+            fields,
+            share_embeddings=model_opt.share_embeddings,
+            src_emb=src_emb,
+        )
+        return onmt.models.NMTModel(encoder=encoder, decoder=decoder)
+    elif model_opt.model_task == ModelTask.LANGUAGE_MODEL:
+        src_emb = build_src_emb(model_opt, fields)
+        decoder, _ = build_decoder_with_embeddings(
+            model_opt, fields, share_embeddings=True, src_emb=src_emb
+        )
+        return onmt.models.LanguageModel(decoder=decoder)
+    else:
+        raise ValueError(f"No model defined for {model_opt.model_task} task")
 
 
 def build_base_model(model_opt, fields, gpu, checkpoint=None, gpu_id=None):
@@ -122,38 +180,21 @@ def build_base_model(model_opt, fields, gpu, checkpoint=None, gpu_id=None):
         the NMTModel.
     """
 
-    # Build embeddings.
-    if model_opt.model_type == "text":
-        src_field = fields["src"]
-        src_emb = build_embeddings(model_opt, src_field)
-    else:
-        src_emb = None
+    # for back compat when attention_dropout was not defined
+    try:
+        model_opt.attention_dropout
+    except AttributeError:
+        model_opt.attention_dropout = model_opt.dropout
 
-    # Build encoder.
-    encoder = build_encoder(model_opt, src_emb)
-
-    # Build decoder.
-    tgt_field = fields["tgt"]
-    tgt_emb = build_embeddings(model_opt, tgt_field, for_encoder=False)
-
-    # Share the embedding matrix - preprocess with share_vocab required.
-    if model_opt.share_embeddings:
-        # src/tgt vocab should be the same if `-share_vocab` is specified.
-        assert src_field.base_field.vocab == tgt_field.base_field.vocab, \
-            "preprocess with -share_vocab if you use share_embeddings"
-
-        tgt_emb.word_lut.weight = src_emb.word_lut.weight
-
-    decoder = build_decoder(model_opt, tgt_emb)
-
-    # Build NMTModel(= encoder + decoder).
+    # Build Model
     if gpu and gpu_id is not None:
         device = torch.device("cuda", gpu_id)
     elif gpu and not gpu_id:
         device = torch.device("cuda")
     elif not gpu:
         device = torch.device("cpu")
-    model = onmt.models.NMTModel(encoder, decoder)
+
+    model = build_task_specific_model(model_opt, fields)
 
     # Build Generator.
     if not model_opt.copy_attn:
@@ -168,12 +209,14 @@ def build_base_model(model_opt, fields, gpu, checkpoint=None, gpu_id=None):
             gen_func
         )
         if model_opt.share_decoder_embeddings:
-            generator[0].weight = decoder.embeddings.word_lut.weight
+            generator[0].weight = model.decoder.embeddings.word_lut.weight
     else:
         tgt_base_field = fields["tgt"].base_field
         vocab_size = len(tgt_base_field.vocab)
         pad_idx = tgt_base_field.vocab.stoi[tgt_base_field.pad_token]
         generator = CopyGenerator(model_opt.dec_rnn_size, vocab_size, pad_idx)
+        if model_opt.share_decoder_embeddings:
+            generator.linear.weight = model.decoder.embeddings.word_lut.weight
 
     # Load the model states from checkpoint or initialize them.
     if checkpoint is not None:
@@ -205,7 +248,7 @@ def build_base_model(model_opt, fields, gpu, checkpoint=None, gpu_id=None):
                 if p.dim() > 1:
                     xavier_uniform_(p)
 
-        if hasattr(model.encoder, 'embeddings'):
+        if hasattr(model, "encoder") and hasattr(model.encoder, "embeddings"):
             model.encoder.embeddings.load_pretrained_vectors(
                 model_opt.pre_word_vecs_enc)
         if hasattr(model.decoder, 'embeddings'):
@@ -214,9 +257,8 @@ def build_base_model(model_opt, fields, gpu, checkpoint=None, gpu_id=None):
 
     model.generator = generator
     model.to(device)
-    if model_opt.model_dtype == 'fp16':
+    if model_opt.model_dtype == 'fp16' and model_opt.optim == 'fusedadam':
         model.half()
-
     return model
 
 

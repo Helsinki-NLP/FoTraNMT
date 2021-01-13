@@ -1,8 +1,11 @@
 """ Translation main class """
 from __future__ import unicode_literals, print_function
 
+import os
 import torch
+from onmt.constants import DefaultTokens
 from onmt.inputters.text_dataset import TextMultiField
+from onmt.utils.alignment import build_align_pharaoh
 
 
 class TranslationBuilder(object):
@@ -29,13 +32,20 @@ class TranslationBuilder(object):
             dict(self.fields)["src"], TextMultiField)
         self.n_best = n_best
         self.replace_unk = replace_unk
-        self.phrase_table = phrase_table
+        self.phrase_table_dict = {}
+        if phrase_table != "" and os.path.exists(phrase_table):
+            with open(phrase_table) as phrase_table_fd:
+                for line in phrase_table_fd:
+                    phrase_src, phrase_trg = line.rstrip("\n").split(
+                        DefaultTokens.PHRASE_TABLE_SEPARATOR)
+                    self.phrase_table_dict[phrase_src] = phrase_trg
         self.has_tgt = has_tgt
 
     def _build_target_tokens(self, src, src_vocab, src_raw, pred, attn):
         tgt_field = dict(self.fields)["tgt"].base_field
         vocab = tgt_field.vocab
         tokens = []
+
         for tok in pred:
             if tok < len(vocab):
                 tokens.append(vocab.itos[tok])
@@ -47,13 +57,12 @@ class TranslationBuilder(object):
         if self.replace_unk and attn is not None and src is not None:
             for i in range(len(tokens)):
                 if tokens[i] == tgt_field.unk_token:
-                    _, max_index = attn[i].max(0)
+                    _, max_index = attn[i][:len(src_raw)].max(0)
                     tokens[i] = src_raw[max_index.item()]
-                    if self.phrase_table != "":
-                        with open(self.phrase_table, "r") as f:
-                            for line in f:
-                                if line.startswith(src_raw[max_index.item()]):
-                                    tokens[i] = line.split('|||')[1].strip()
+                    if self.phrase_table_dict:
+                        src_tok = src_raw[max_index.item()]
+                        if src_tok in self.phrase_table_dict:
+                            tokens[i] = self.phrase_table_dict[src_tok]
         return tokens
 
     def from_batch(self, translation_batch):
@@ -62,13 +71,17 @@ class TranslationBuilder(object):
                len(translation_batch["predictions"]))
         batch_size = batch.batch_size
 
-        preds, pred_score, attn, gold_score, indices = list(zip(
+        preds, pred_score, attn, align, gold_score, indices = list(zip(
             *sorted(zip(translation_batch["predictions"],
                         translation_batch["scores"],
                         translation_batch["attention"],
+                        translation_batch["alignment"],
                         translation_batch["gold_score"],
                         batch.indices.data),
                     key=lambda x: x[-1])))
+
+        if not any(align):  # when align is a empty nested list
+            align = [None] * batch_size
 
         # Sorting
         inds, perm = torch.sort(batch.indices)
@@ -91,7 +104,8 @@ class TranslationBuilder(object):
             pred_sents = [self._build_target_tokens(
                 src[:, b] if src is not None else None,
                 src_vocab, src_raw,
-                preds[b][n], attn[b][n])
+                preds[b][n],
+                align[b][n] if align[b] is not None else attn[b][n])
                 for n in range(self.n_best)]
             gold_sent = None
             if tgt is not None:
@@ -103,7 +117,7 @@ class TranslationBuilder(object):
             translation = Translation(
                 src[:, b] if src is not None else None,
                 src_raw, pred_sents, attn[b], pred_score[b],
-                gold_sent, gold_score[b]
+                gold_sent, gold_score[b], align[b]
             )
             translations.append(translation)
 
@@ -122,13 +136,15 @@ class Translation(object):
             translation.
         gold_sent (List[str]): Words from gold translation.
         gold_score (List[float]): Log-prob of gold translation.
+        word_aligns (List[FloatTensor]): Words Alignment distribution for
+            each translation.
     """
 
     __slots__ = ["src", "src_raw", "pred_sents", "attns", "pred_scores",
-                 "gold_sent", "gold_score"]
+                 "gold_sent", "gold_score", "word_aligns"]
 
     def __init__(self, src, src_raw, pred_sents,
-                 attn, pred_scores, tgt_sent, gold_score):
+                 attn, pred_scores, tgt_sent, gold_score, word_aligns):
         self.src = src
         self.src_raw = src_raw
         self.pred_sents = pred_sents
@@ -136,6 +152,7 @@ class Translation(object):
         self.pred_scores = pred_scores
         self.gold_sent = tgt_sent
         self.gold_score = gold_score
+        self.word_aligns = word_aligns
 
     def log(self, sent_number):
         """
@@ -149,6 +166,12 @@ class Translation(object):
         pred_sent = ' '.join(best_pred)
         msg.append('PRED {}: {}\n'.format(sent_number, pred_sent))
         msg.append("PRED SCORE: {:.4f}\n".format(best_score))
+
+        if self.word_aligns is not None:
+            pred_align = self.word_aligns[0]
+            pred_align_pharaoh = build_align_pharaoh(pred_align)
+            pred_align_sent = ' '.join(pred_align_pharaoh)
+            msg.append("ALIGN: {}\n".format(pred_align_sent))
 
         if self.gold_sent is not None:
             tgt_sent = ' '.join(self.gold_sent)

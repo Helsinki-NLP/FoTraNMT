@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 
 from onmt.modules.position_ffn import PositionwiseFeedForward
+from onmt.modules.position_ffn import ActivationFunction
 
 
 class AverageAttention(nn.Module):
@@ -17,18 +18,23 @@ class AverageAttention(nn.Module):
        model_dim (int): the dimension of keys/values/queries,
            must be divisible by head_count
        dropout (float): dropout parameter
+       pos_ffn_activation_fn (ActivationFunction):
+           activation function choice for PositionwiseFeedForward layer
     """
 
-    def __init__(self, model_dim, dropout=0.1):
+    def __init__(self, model_dim, dropout=0.1, aan_useffn=False,
+                 pos_ffn_activation_fn=ActivationFunction.relu):
         self.model_dim = model_dim
-
+        self.aan_useffn = aan_useffn
         super(AverageAttention, self).__init__()
-
-        self.average_layer = PositionwiseFeedForward(model_dim, model_dim,
-                                                     dropout)
+        if aan_useffn:
+            self.average_layer = PositionwiseFeedForward(model_dim, model_dim,
+                                                         dropout,
+                                                         pos_ffn_activation_fn
+                                                         )
         self.gating_layer = nn.Linear(model_dim * 2, model_dim * 2)
 
-    def cumulative_average_mask(self, batch_size, inputs_len):
+    def cumulative_average_mask(self, batch_size, inputs_len, device):
         """
         Builds the mask to compute the cumulative average as described in
         :cite:`DBLP:journals/corr/abs-1805-00631` -- Figure 3
@@ -43,9 +49,10 @@ class AverageAttention(nn.Module):
             * A Tensor of shape ``(batch_size, input_len, input_len)``
         """
 
-        triangle = torch.tril(torch.ones(inputs_len, inputs_len))
-        weights = torch.ones(1, inputs_len) / torch.arange(
-            1, inputs_len + 1, dtype=torch.float)
+        triangle = torch.tril(torch.ones(inputs_len, inputs_len,
+                              dtype=torch.float, device=device))
+        weights = torch.ones(1, inputs_len, dtype=torch.float, device=device) \
+            / torch.arange(1, inputs_len + 1, dtype=torch.float, device=device)
         mask = triangle * weights.transpose(0, 1)
 
         return mask.unsqueeze(0).expand(batch_size, inputs_len, inputs_len)
@@ -72,14 +79,13 @@ class AverageAttention(nn.Module):
 
         if layer_cache is not None:
             step = mask_or_step
-            device = inputs.device
             average_attention = (inputs + step *
-                                 layer_cache["prev_g"].to(device)) / (step + 1)
+                                 layer_cache["prev_g"]) / (step + 1)
             layer_cache["prev_g"] = average_attention
             return average_attention
         else:
             mask = mask_or_step
-            return torch.matmul(mask, inputs)
+            return torch.matmul(mask.to(inputs.dtype), inputs)
 
     def forward(self, inputs, mask=None, layer_cache=None, step=None):
         """
@@ -96,13 +102,12 @@ class AverageAttention(nn.Module):
 
         batch_size = inputs.size(0)
         inputs_len = inputs.size(1)
-
-        device = inputs.device
         average_outputs = self.cumulative_average(
           inputs, self.cumulative_average_mask(batch_size,
-                                               inputs_len).to(device).float()
+                                               inputs_len, inputs.device)
           if layer_cache is None else step, layer_cache=layer_cache)
-        average_outputs = self.average_layer(average_outputs)
+        if self.aan_useffn:
+            average_outputs = self.average_layer(average_outputs)
         gating_outputs = self.gating_layer(torch.cat((inputs,
                                                       average_outputs), -1))
         input_gate, forget_gate = torch.chunk(gating_outputs, 2, dim=2)

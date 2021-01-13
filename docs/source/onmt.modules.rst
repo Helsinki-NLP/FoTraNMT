@@ -48,7 +48,7 @@ Attention
 
 
 
-Architecture: Transfomer
+Architecture: Transformer
 ----------------------------
 
 .. autoclass:: onmt.modules.PositionalEncoding
@@ -92,21 +92,6 @@ Architecture: SRU
 ----------------------------
 
 .. autoclass:: onmt.models.sru.SRU
-    :members:
-
-
-Alternative Encoders
---------------------
-
-onmt\.modules\.AudioEncoder
-
-.. autoclass:: onmt.encoders.AudioEncoder
-    :members:
-
-
-onmt\.modules\.ImageEncoder
-
-.. autoclass:: onmt.encoders.ImageEncoder
     :members:
 
 

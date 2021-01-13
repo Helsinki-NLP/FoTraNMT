@@ -3,10 +3,35 @@
 import torch
 import random
 import inspect
-from itertools import islice
+import numpy as np
+from itertools import islice, repeat
+import os
 
 
-def split_corpus(path, shard_size):
+def check_path(path, exist_ok=False, log=print):
+    """Check if `path` exists, makedirs if not else warning/IOError."""
+    if os.path.exists(path):
+        if exist_ok:
+            log(f"path {path} exists, may overwrite...")
+        else:
+            raise IOError(f"path {path} exists, stop.")
+    else:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+
+
+def split_corpus(path, shard_size, default=None):
+    """yield a `list` containing `shard_size` line of `path`,
+    or repeatly generate `default` if `path` is None.
+    """
+    if path is not None:
+        return _split_corpus(path, shard_size)
+    else:
+        return repeat(default)
+
+
+def _split_corpus(path, shard_size):
+    """Yield a `list` containing `shard_size` line of `path`.
+    """
     with open(path, "rb") as f:
         if shard_size <= 0:
             yield f.readlines()
@@ -34,7 +59,7 @@ def sequence_mask(lengths, max_len=None):
     """
     batch_size = lengths.numel()
     max_len = max_len or lengths.max()
-    return (torch.arange(0, max_len)
+    return (torch.arange(0, max_len, device=lengths.device)
             .type_as(lengths)
             .repeat(batch_size, 1)
             .lt(lengths.unsqueeze(1)))
@@ -80,6 +105,8 @@ def set_random_seed(seed, is_cuda):
         # some cudnn methods can be random even after fixing the seed
         # unless you tell it to be deterministic
         torch.backends.cudnn.deterministic = True
+        # This one is needed for various tranfroms
+        np.random.seed(seed)
 
     if is_cuda and seed > 0:
         # These ensure same initialization in multi gpu mode
@@ -124,3 +151,37 @@ def relative_matmul(x, z, transpose):
 def fn_args(fun):
     """Returns the list of function arguments name."""
     return inspect.getfullargspec(fun).args
+
+
+def report_matrix(row_label, column_label, matrix):
+    header_format = "{:>10.10} " + "{:>10.7} " * len(row_label)
+    row_format = "{:>10.10} " + "{:>10.7f} " * len(row_label)
+    output = header_format.format("", *row_label) + '\n'
+    for word, row in zip(column_label, matrix):
+        max_index = row.index(max(row))
+        row_format = row_format.replace(
+            "{:>10.7f} ", "{:*>10.7f} ", max_index + 1)
+        row_format = row_format.replace(
+            "{:*>10.7f} ", "{:>10.7f} ", max_index)
+        output += row_format.format(word, *row) + '\n'
+        row_format = "{:>10.10} " + "{:>10.7f} " * len(row_label)
+    return output
+
+
+def check_model_config(model_config, root):
+    # we need to check the model path + any tokenizer path
+    for model in model_config["models"]:
+        model_path = os.path.join(root, model)
+        if not os.path.exists(model_path):
+            raise FileNotFoundError(
+                "{} from model {} does not exist".format(
+                    model_path, model_config["id"]))
+    if "tokenizer" in model_config.keys():
+        if "params" in model_config["tokenizer"].keys():
+            for k, v in model_config["tokenizer"]["params"].items():
+                if k.endswith("path"):
+                    tok_path = os.path.join(root, v)
+                    if not os.path.exists(tok_path):
+                        raise FileNotFoundError(
+                            "{} from model {} does not exist".format(
+                                tok_path, model_config["id"]))

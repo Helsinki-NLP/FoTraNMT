@@ -35,7 +35,7 @@ class EncoderBase(nn.Module):
         raise NotImplementedError
 
     def _check_args(self, src, lengths=None, hidden=None):
-        _, n_batch, _ = src.size()
+        n_batch = src.size(1)
         if lengths is not None:
             n_batch_, = lengths.size()
             aeq(n_batch, n_batch_)
@@ -49,10 +49,11 @@ class EncoderBase(nn.Module):
 
 
         Returns:
-            (FloatTensor, FloatTensor):
+            (FloatTensor, FloatTensor, FloatTensor):
 
             * final encoder state, used to initialize decoder
             * memory bank for attention, ``(src_len, batch, hidden)``
+            * lengths
         """
 
         raise NotImplementedError
