@@ -17,7 +17,7 @@ class MultiTaskModel(nn.Module):
     def __init__(self, encoders, decoders, model_opt, multigpu=False):
         super(MultiTaskModel, self).__init__()
         self.multigpu = multigpu
-
+        
         encoder_ids = {lang_code: idx
                    for lang_code, idx
                    in zip(encoders.keys(), range(len(list(encoders.keys()))))}
@@ -40,9 +40,36 @@ class MultiTaskModel(nn.Module):
 
         self.use_attention_bridge = model_opt.use_attention_bridge
         self.init_decoder = model_opt.init_decoder
+
         if self.use_attention_bridge:
-                self.attention_bridge = AttentionBridge(model_opt.rnn_size, model_opt.attention_heads, model_opt)
-        
+            self.attention_bridge = AttentionBridge(model_opt.rnn_size, model_opt.attention_heads, model_opt)
+
+            # Layers shared across language family
+            fam_ids = {famcode:idx for idx,famcode in enumerate(set(model_opt.lang_fam))}
+            if model_opt.lang_fam[0]:
+                encoder_fams = {lpair.split('-')[0]:fam_ids[model_opt.lang_fam[i]] for i, lpair in enumerate(model_opt.src_tgt)}  
+                fam_bridges = nn.ModuleList([AttentionBridge(model_opt.rnn_size, model_opt.attention_heads, model_opt) for _ in fam_ids])
+                if fam_ids.get('None'):
+                    fam_bridges[fam_ids['None']] = nn.Identity()
+            else:
+                encoder_fams = {lpair.split('-')[0]:0 for i, lpair in enumerate(model_opt.src_tgt)}  
+                fam_bridges = nn.ModuleList([nn.Identity()])
+
+            # Layers shared across language group
+            grp_ids = {grpcode:idx for idx,grpcode in enumerate(set(model_opt.lang_group))}
+            if model_opt.lang_group[0]:
+                encoder_grps = {lpair.split('-')[0]:grp_ids[model_opt.lang_group[i]] for i, lpair in enumerate(model_opt.src_tgt)}  
+                grp_bridges = nn.ModuleList([AttentionBridge(model_opt.rnn_size, model_opt.attention_heads, model_opt) for _ in grp_ids])
+                if grp_ids.get('None'):
+                    grp_bridges[grp_ids['None']] = nn.Identity()
+            else:
+                encoder_grps = {lpair.split('-')[0]:0 for i, lpair in enumerate(model_opt.src_tgt)}  
+                grp_bridges = nn.ModuleList([nn.Identity()])
+            
+            self.encoder_fams = encoder_fams
+            self.fam_bridges = fam_bridges
+            self.encoder_grps = encoder_grps
+            self.grp_bridges = grp_bridges
         
         # generator ids is linked with decoder_ids
         # self.generators = None
@@ -75,9 +102,13 @@ class MultiTaskModel(nn.Module):
 
         #TEST
         alphas = None
-        
         if self.use_attention_bridge:
-            alphas, memory_bank = self.attention_bridge(memory_bank, src)
+                
+            alphas, memory_bank = self.grp_bridges[self.encoder_grps[src_task]]((src, memory_bank))
+            alphas, memory_bank = self.fam_bridges[self.encoder_fams[src_task]]((src, memory_bank))
+
+            alphas, memory_bank = self.attention_bridge((src, memory_bank))
+            
             if self.decoder_types[tgt_task]=='transformer':
                 enc_state = decoder.init_state(memory_bank, memory_bank, enc_final)
             else: 

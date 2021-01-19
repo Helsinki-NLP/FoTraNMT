@@ -30,7 +30,8 @@ class AttentionBridge(nn.Module):
         self.M = None
 
 
-    def forward(self, enc_output, enc_input):
+    def forward(self, enc_in_out: tuple):
+        enc_input, enc_output = enc_in_out
         output, alphas = self.mixAtt(enc_output, enc_input)
         #take transpose to match dimensions s.t. r=new_seq_len:
         self.M = torch.transpose(output, 0, 1).contiguous() #[r,bsz,nhid]

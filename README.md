@@ -1,113 +1,48 @@
-# HelsinkiNLP fork of OpenNMT-py for the IWSLT2020 offline speech translation task
+# About this branch
+This is an OpenNMT-py fork developed by the NLP group at University of Helsinki.
+In this branch we developed features for multilingual & multimodal machine translation enabled by parallel training of independent encoders and decoders connected via an inner-attention layer. 
 
-In this repo you will find the scripts and tools we used for training the multimodal system we submited to the shared task.  The architecture we use in our experiments is portrayed below and is described on detail in [Vázquez et al., 2020](https://www.mitpressjournals.org/doi/abs/10.1162/COLI_a_00377). 
+More detail on 
+ - the arquitecture ([article](https://www.aclweb.org/anthology/2020.cl-2.5))
+ - the audio processing features ([article](https://www.aclweb.org/anthology/2020.iwslt-1.10) &  [fork](https://github.com/Helsinki-NLP/OpenNMT-py/tree/master)) 
+ - the hierarchical structure (coming soon!)
 
-[fig1]: https://github.com/Helsinki-NLP/OpenNMT-py/blob/iwslt2020/docs/arc.png "compound attention Figure 1"
+Go to [our master branch](https://github.com/Helsinki-NLP/OpenNMT-py/tree/master) for documentation of OpenNMT-py functionalities or [the offical repo](https://github.com/OpenNMT/OpenNMT-py) for more updated information.
 
-![alt text][fig1]
-
-To replicate the experiments, you will first need to dowload + clean + cut to sentence-like segments +convert to .wav + set the resampling of the audio files to 16,000 for each of the allowed datasets (you can get them from [here](http://www.iwslt.org/doku.php?id=offline_speech_translation)). Or you can modify the paths ahead to use your own audio files to use the system (in `.wav` format and with the same sampling size)
-
-Notice the scripts we use are modifications from the [OpenNMT-py scripts for speech-to-text tools](https://opennmt.net/OpenNMT-py/speech2text.html), so their documentation is also valid for these following parts.
-
-You can run the preprocessing procedure with the script (you need to correct the paths there): 
-``` 
-source ONMTpreprocall.sh all.enen
-source ONMTpreprocall.sh all.ende
-source ONMTpreprocall.sh text
-source ONMTpreprocall.sh text.char
+### Requirements & Instalation 
+You need to clone this repo
+```bash
+git clone --branch att-brg https://github.com/Helsinki-NLP/OpenNMT-py.git
+cd OpenNMT-py
 ```
-The default values in the preprocessing script are the used ones, unless stated otherwise in the paper. (use a proper shard-size for your CUDA device not to crash due to memory issues)
-
-After that is done, train your system. Here is one example on how to call a multimodal system:
+We strongly recommend to make the setup in a virtual environment. 
+This is done by:
+```bash
+python3 -m pip install --user --upgrade pip
+python3 -m pip install --user virtualenv
+python3 -m venv env
+source env/bin/activate
 ```
-trainoption='trf_ENaENt2DEtENt.3enc.3dec.1skmel.100ah.drop_h5all'
-
-echo "Training with $trainoption configuration:"
-
-echo "          EN_a  -> DE_t"
-echo "          EN_t  ----^  "
-echo "          EN_a  -> EN_t"
-echo "          DE_t  ----^  "
-DATAPATH=/path/to/ONMTpreprocessed/data/
-
-python train.py -data ${DATAPATH}/h5/all_partial/ENaudio_DEtext/data \
-                      ${DATAPATH}/all/ENtext_DEtext/data     \
-                      ${DATAPATH}/h5/all_partial/ENaudio_ENtext/data \
-                      ${DATAPATH}/all/DEtext_ENtext/data \
-                -src_tgt           en_a-de_t      en_t-de_t     en_a-en_t     de_t-en_t   \
-                -model_type        audiotrf       text          audiotrf      text        \
-                -audio_enc_pooling 1              1             1             1           \
-                -batch_size        32             4096          32            4096        \
-                -accum_count       8 \
-                -batch_type        sents          tokens        sents         tokens      \
-                -normalization     sents          tokens        sents         tokens      \
-                -decoder_type      transformer    transformer   transformer   transformer \
-                -cnn_kernel_width 3            \
-                -save_model /scratch/project_2000945/iwslt19/models/audiotrf/$trainoption \
-                -attention_heads 100            \
-                -use_attention_bridge          \
-                -init_decoder attention_matrix \
-                -n_mels         40  \
-                -n_stacked_mels  1  \
-                -drop_audioafter 5500 \
-        -enc_layers 3 -dec_layers 3 -rnn_size 512 -word_vec_size 512 -transformer_ff 2048 -heads 8  \
-        -encoder_type transformer  -position_encoding \
-        -max_generator_batches 2 -dropout 0.1 \
-        -optim adam -adam_beta2 0.998 -decay_method noam -warmup_steps 8000 -learning_rate 2 \
-        -max_grad_norm 0 -param_init 0  -param_init_glorot \
-        -label_smoothing 0.1 \
-                -report_every            250  \
-                -train_steps          350000  \
-                -valid_steps           5000  \
-                -save_checkpoint_steps 5000  \
-                -keep_checkpoint           20  \
-                -world_size   1  \
-                -gpu_ranks    0  \
-                -save_config /scratch/project_2000945/iwslt19/models/audiotrf/train-trf_$trainoption.config
-
-python train.py -config /scratch/project_2000945/iwslt19/models/audiotrf/train-trf_$trainoption.config
+_You can confirm you’re in the virtual environment by checking the location of your Python interpreter, it should point to the env directory:_
+```bash
+which python
+pip install --upgrade pip
 ```
-Finally, translate, using out modified procedure for systems trained in a multitask setting. For example,
-```
-MODELNAME='path/to/model_checkpoint.pt'
-OUTNAME='path/where/to/save/output.txt'
-path_to_mustc='you/know/what/to/do/here'
-python translate_multimodel.py -data_type audio \
-                               -src_lang  en_a  -tgt_lang  de_t \
-                               -model ${MODELNAME} \
-                                         -src_dir /scratch/project_2000945/iwslt19/MUSTC/en-de/data/mustc-split/ \
-                                         -src ${path_to_mustc}/MUSTC/en-de/data/mustc-split/test_en-de.txt \
-                                         -output ${OUTNAME} \
-                                         -use_attention_bridge \
-                                         -gpu 0 \
-                                         -n_stacked_mels 1 \
-                                         -n_mels 80 \
-                                         -verbose
+Now that you’re in your virtual environment you can install packages without worrying too much about version control.
+
+First you need to have installed [`torch`](https://pytorch.org/get-started/locally/) according to your system requirements (which can be checked using `nvidia-smi`)
+```bash
+python3 -m pip install torch torchvision
 ```
 
-If you use this code please cite:
+After installing pytorch, you can run: 
+```bash
+pip install -r requirements.txt
 ```
-@article{doi:10.1162/coli\_a\_00377,
-author = {Vázquez, Raúl and Raganato, Alessandro and Creutz, Mathias and Tiedemann, Jörg},
-title = {A Systematic Study of Inner-Attention-Based Sentence Representations                     in Multilingual Neural Machine Translation},
-journal = {Computational Linguistics},
-volume = {0},
-number = {0},
-pages = {1-38},
-year = {0},
-doi = {10.1162/coli\_a\_00377},
 
-URL = { 
-        https://doi.org/10.1162/coli_a_00377
-    
-}
-}
-```
-And  also [cite OpenNMT-py](#headCITATION), naturally :)
+# Hands-on example
 
-### The following is part of a small tutorial on how to use this repo:
-The scripts require subword-nmt and sacrebleu.
+The following scripts require subword-nmt and sacrebleu.
 ```bash
 pip install subword-nmt
 pip install sacrebleu
@@ -123,7 +58,8 @@ cd OpenNMT-py/data
 source ./prep-data.sh
 ```
    
-Second, let's train a model using French and German as input, and Czech as target language.
+Second, let's train a model using English, French and German as input, and Czech as target language. 
+This example introduces an additional shared layer between the English and German encoders (excluding the French one). The Attention Bridge is shared between all three.
 
 ```bash
 bash train_example.sh
