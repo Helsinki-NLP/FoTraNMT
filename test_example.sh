@@ -32,7 +32,6 @@ python translate_multimodel.py -model ${SAVE_PATH}/MULTILINGUAL_MULTI_step_100.p
 
 
 
-
 testref=data/multi30k/dataset/data/task1/tok/test_2016_flickr.lc.norm.tok.cs
 cat ${SAVE_PATH}/MULTILINGUAL_prediction_fr-cs.bpe.txt | sed -E 's/(@@ )|(@@ ?$)//g' | sacrebleu $testref
 
