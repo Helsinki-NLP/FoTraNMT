@@ -81,7 +81,7 @@ def build_trainer(opt, device_id, model, fields, optim, generators, tgt_vocabs, 
     attention_heads = opt.attention_heads
     if len(opt.src_tgt)== len(opt.batch_size) and len(opt.src_tgt) == len(opt.batch_type):
         batches_info = { tuple(opt.src_tgt[i].split('-')):[opt.batch_size[i],opt.batch_type[i]]  for i in range(len(opt.src_tgt))}
-    else
+    else:
         bsz=opt.batch_size.pop()
         btype=opt.batch_type.pop()
         batches_info = { tuple(opt.src_tgt[i].split('-')):[bsz,btype]  for i in range(len(opt.src_tgt))}
