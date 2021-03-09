@@ -79,7 +79,13 @@ def build_trainer(opt, device_id, model, fields, optim, generators, tgt_vocabs, 
     dropout_steps = opt.dropout_steps
     activate_extra_loss = opt.activate_extra_loss
     attention_heads = opt.attention_heads
-    batches_info = { tuple(opt.src_tgt[i].split('-')):[opt.batch_size[i],opt.batch_type[i]]  for i in range(len(opt.src_tgt))}
+    if len(opt.src_tgt)== len(opt.batch_size) and len(opt.src_tgt) == len(opt.batch_type):
+        batches_info = { tuple(opt.src_tgt[i].split('-')):[opt.batch_size[i],opt.batch_type[i]]  for i in range(len(opt.src_tgt))}
+    else
+        bsz=opt.batch_size.pop()
+        btype=opt.batch_type.pop()
+        batches_info = { tuple(opt.src_tgt[i].split('-')):[bsz,btype]  for i in range(len(opt.src_tgt))}
+
     if device_id >= 0:
         gpu_rank = opt.gpu_ranks[device_id]
     else:

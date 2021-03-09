@@ -211,5 +211,6 @@ if __name__ == "__main__":
     parser = _get_parser()
 
     opt = parser.parse_args()
-    with launch_ipdb_on_exception():
-        main(opt)
+    #with launch_ipdb_on_exception():
+    #    main(opt)
+    main(opt)
