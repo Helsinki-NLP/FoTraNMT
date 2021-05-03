@@ -331,11 +331,11 @@ def train_opts(parser):
     group.add('--src_tgt', '-src_tgt', required=True, nargs='+',
             type=str, help="""src and tgt language codes in the form
             <src>-<tgt>""")
-    group.add('--lang_fam', '-lang_fam', required=False, nargs='+', default=[None],
+    group.add('--lang_fam', '-lang_fam', required=False, nargs='+', default=[''],
             type=str, help="""languages of the same language family will share an attention layer.
                             If active this shared layer receives info from the lang-specific encoder
                             OR a lang-group shared layer if --lang_group is used.""")
-    group.add('--lang_group', '-langgroup', required=False, nargs='+', default=[None],
+    group.add('--lang_group', '-langgroup', required=False, nargs='+', default=[''],
             type=str, help="""languages of the same language group will share an attention layer.
                               If active this shared layer receives info from the lang-specific encoder.""")
 

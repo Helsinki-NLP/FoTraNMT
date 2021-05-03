@@ -2,7 +2,7 @@ six
 tqdm==4.30.*
 torch==1.1
 torchvision
-torchtext=0.6
+torchtext==0.6
 h5py
 #http://download.pytorch.org/whl/torchaudio-0.2-cp36-cp36m-linux_x86_64.whl
 #librosa

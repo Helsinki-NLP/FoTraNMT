@@ -644,7 +644,7 @@ class Translator(object):
         #if self.use_attention_bridge and type(self.model.decoders[self.model.decoder_ids[self.tgt_lang]]) is TransformerDecoder:
         #    self.model.decoders[self.model.decoder_ids[self.tgt_lang]].init_state(
         #            memory_bank, memory_bank, enc_states)
-
+         
         if self.use_attention_bridge:
                 
             alphas, memory_bank = self.model.grp_bridges[self.model.encoder_grps[self.src_lang]]((src, memory_bank))
@@ -664,6 +664,9 @@ class Translator(object):
                     #src4init=memory_bank
                     self.model.decoders[self.model.decoder_ids[self.tgt_lang]].init_state(
                         memory_bank, memory_bank, enc_states)
+                else:
+                    self.model.decoders[self.model.decoder_ids[self.tgt_lang]].init_state(
+                            src, memory_bank, enc_states)
 
             else:
                 self.model.decoders[self.model.decoder_ids[self.tgt_lang]].init_state(

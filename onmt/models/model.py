@@ -46,7 +46,7 @@ class MultiTaskModel(nn.Module):
 
             # Layers shared across language family
             fam_ids = {famcode:idx for idx,famcode in enumerate(set(model_opt.lang_fam))}
-            if eval(model_opt.lang_fam[0]):
+            if model_opt.lang_fam[0]:
                 encoder_fams = {lpair.split('-')[0]:fam_ids[model_opt.lang_fam[i]] for i, lpair in enumerate(model_opt.src_tgt)}  
                 fam_bridges = nn.ModuleList([AttentionBridge(model_opt.rnn_size, model_opt.attention_heads, model_opt) for _ in fam_ids])
                 if fam_ids.get('None'):
@@ -57,7 +57,7 @@ class MultiTaskModel(nn.Module):
 
             # Layers shared across language group
             grp_ids = {grpcode:idx for idx,grpcode in enumerate(set(model_opt.lang_group))}
-            if eval(model_opt.lang_group[0]):
+            if model_opt.lang_group[0]:
                 encoder_grps = {lpair.split('-')[0]:grp_ids[model_opt.lang_group[i]] for i, lpair in enumerate(model_opt.src_tgt)}  
                 grp_bridges = nn.ModuleList([AttentionBridge(model_opt.rnn_size, model_opt.attention_heads, model_opt) for _ in grp_ids])
                 if grp_ids.get('None'):
@@ -97,7 +97,7 @@ class MultiTaskModel(nn.Module):
 
         encoder = self.encoders[self.encoder_ids[src_task]]
         decoder = self.decoders[self.decoder_ids[tgt_task]]
-
+        
         enc_final, memory_bank, lengths = encoder(src, lengths)
 
         #TEST
