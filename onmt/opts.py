@@ -788,6 +788,9 @@ def translate_opts(parser):
     group.add('--use_attention_bridge', '-use_attention_bridge',
             action='store_true', help="""Use self-attention layer
             between enc and dec""")
+    group.add('--force_decode_first_token', '-force_decode', type=str, default=None,
+            help="""Force given tokens to be decoded first. 
+                    To be used for multilingual settings. Allows for an initialization of the decoder into the given lang.""")
 
 def translate_multimodel(parser):
     # src and tgt langs for multi-encoder and multi-decoder models

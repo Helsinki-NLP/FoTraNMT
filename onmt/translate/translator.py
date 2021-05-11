@@ -119,7 +119,8 @@ class Translator(object):
             report_score=True,
             logger=None,
             seed=-1,
-            use_attention_bridge=False):
+            use_attention_bridge=False,
+            force_decoding_of=None):
         self.model = model
         self.src_lang = src_lang
         self.tgt_lang = tgt_lang
@@ -180,6 +181,7 @@ class Translator(object):
         self._filter_pred = None
 
         self.use_attention_bridge = use_attention_bridge
+        self.force_decoding_of = force_decoding_of
         # for debugging
         self.beam_trace = self.dump_beam != ""
         self.beam_accum = None
@@ -203,7 +205,8 @@ class Translator(object):
             out_file=None,
             report_score=True,
             logger=None,
-            use_attention_bridge=False):
+            use_attention_bridge=False,
+            ):
         """Alternate constructor.
 
         Args:
@@ -256,7 +259,8 @@ class Translator(object):
             report_score=report_score,
             logger=logger,
             seed=opt.seed,
-            use_attention_bridge=opt.use_attention_bridge)
+            use_attention_bridge=opt.use_attention_bridge,
+            force_decoding_of=opt.force_decode_first_token)
 
     def _log(self, msg):
         if self.logger:
@@ -442,7 +446,35 @@ class Translator(object):
 
         # Encoder forward.
         src, enc_states, memory_bank, src_lengths = self._run_encoder(batch)
-        self.model.decoder.init_state(src, memory_bank, enc_states)
+        #self.model.decoder.init_state(src, memory_bank, enc_states)
+        if self.use_attention_bridge:
+                
+            alphas, memory_bank = self.model.grp_bridges[self.model.encoder_grps[self.src_lang]]((src, memory_bank))
+            alphas, memory_bank = self.model.fam_bridges[self.model.encoder_fams[self.src_lang]]((src, memory_bank))
+
+            alphasZ, memory_bank = self.model.attention_bridge((src, memory_bank))
+            if type(self.model.decoders[self.model.decoder_ids[self.tgt_lang]]) is TransformerDecoder:
+                self.model.decoders[self.model.decoder_ids[self.tgt_lang]].init_state(
+                        memory_bank, memory_bank, enc_states)
+            else:
+                self.model.decoders[self.model.decoder_ids[self.tgt_lang]].init_state(
+                        src, memory_bank, enc_states)
+        else:
+            if type(self.model.decoders[self.model.decoder_ids[self.tgt_lang]]) is TransformerDecoder:
+                if isinstance(self.model.encoders[self.model.encoder_ids[self.src_lang]],
+                              (onmt.encoders.audio_encoder.AudioEncoder,onmt.encoders.audio_encoder.AudioEncoderTrf,onmt.encoders.audio_encoder.AudioEncoderTrfv1)):
+                    #src4init=memory_bank
+                    self.model.decoders[self.model.decoder_ids[self.tgt_lang]].init_state(
+                        memory_bank, memory_bank, enc_states)
+                else:
+                    self.model.decoders[self.model.decoder_ids[self.tgt_lang]].init_state(
+                            src, memory_bank, enc_states)
+
+            else:
+                self.model.decoders[self.model.decoder_ids[self.tgt_lang]].init_state(
+                        src, memory_bank, enc_states)
+
+
 
         use_src_map = self.copy_attn
 
@@ -484,6 +516,16 @@ class Translator(object):
                 batch_offset=random_sampler.select_indices
             )
 
+            if step == 0 and self.force_decoding_of:
+                tok_idx = self._tgt_vocab.stoi[self.force_decoding_of]
+                if tok_idx != self._tgt_unk_idx:
+                    probs = torch.zeros([batch_size, self._tgt_vocab_len])
+                    probs[:,tok_idx] = 1
+                    log_probs = probs.log()
+                else:
+                    print(f'will not force decoding of token {self.force_decoding_of} because it is not in the vocab')
+
+
             random_sampler.advance(log_probs, attn)
             any_batch_is_finished = random_sampler.is_finished.any()
             if any_batch_is_finished:
@@ -506,8 +548,10 @@ class Translator(object):
                 if src_map is not None:
                     src_map = src_map.index_select(1, select_indices)
 
-                self.model.decoder.map_state(
+                decoder = self.model.decoders[self.model.decoder_ids[self.tgt_lang]]
+                decoder.map_state(
                     lambda state, dim: state.index_select(dim, select_indices))
+
 
         results["scores"] = random_sampler.scores
         results["predictions"] = random_sampler.predictions
@@ -631,20 +675,7 @@ class Translator(object):
 
         # (1) Run the encoder on the src.
         src, enc_states, memory_bank, src_lengths = self._run_encoder(batch)
-        
-        #if self.use_attention_bridge:
-        #    alphasZ, memory_bank = self.model.attention_bridge(memory_bank, src)
-
-        #self.model.decoder.init_state(src, memory_bank, enc_states)
-        #self.model.decoders[self.model.decoder_ids[self.tgt_lang]].init_state(
-        #        src, memory_bank, enc_states)
-
-        # for transformer decoders, init state with correct size 
-        # (only used for masking, not needed with attBridge)
-        #if self.use_attention_bridge and type(self.model.decoders[self.model.decoder_ids[self.tgt_lang]]) is TransformerDecoder:
-        #    self.model.decoders[self.model.decoder_ids[self.tgt_lang]].init_state(
-        #            memory_bank, memory_bank, enc_states)
-         
+             
         if self.use_attention_bridge:
                 
             alphas, memory_bank = self.model.grp_bridges[self.model.encoder_grps[self.src_lang]]((src, memory_bank))
@@ -717,6 +748,7 @@ class Translator(object):
             exclusion_tokens=self._exclusion_idxs,
             memory_lengths=memory_lengths)
 
+        
         for step in range(max_length):
             decoder_input = beam.current_predictions.view(1, -1, 1)
 
@@ -729,6 +761,16 @@ class Translator(object):
                 src_map=src_map,
                 step=step,
                 batch_offset=beam._batch_offset)
+
+            if step == 0 and self.force_decoding_of:
+                tok_idx = self._tgt_vocab.stoi[self.force_decoding_of]
+                if tok_idx != self._tgt_unk_idx:
+                    probs = torch.zeros([batch_size*beam_size, self._tgt_vocab_len])
+                    probs[:,tok_idx] = 1
+                    log_probs = probs.log()
+                else:
+                    print(f'will not force decoding of token {self.force_decoding_of} because it is not in the vocab')
+
 
             beam.advance(log_probs, attn)
             any_beam_is_finished = beam.is_finished.any()
