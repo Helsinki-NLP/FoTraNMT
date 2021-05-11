@@ -519,7 +519,7 @@ class Translator(object):
             if step == 0 and self.force_decoding_of:
                 tok_idx = self._tgt_vocab.stoi[self.force_decoding_of]
                 if tok_idx != self._tgt_unk_idx:
-                    probs = torch.zeros([batch_size, self._tgt_vocab_len])
+                    probs = torch.zeros_like(log_probs)
                     probs[:,tok_idx] = 1
                     log_probs = probs.log()
                 else:
@@ -765,7 +765,7 @@ class Translator(object):
             if step == 0 and self.force_decoding_of:
                 tok_idx = self._tgt_vocab.stoi[self.force_decoding_of]
                 if tok_idx != self._tgt_unk_idx:
-                    probs = torch.zeros([batch_size*beam_size, self._tgt_vocab_len])
+                    probs = torch.zeros_like(log_probs)
                     probs[:,tok_idx] = 1
                     log_probs = probs.log()
                 else:
