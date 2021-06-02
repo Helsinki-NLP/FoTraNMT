@@ -89,15 +89,10 @@ def build_torch_optimizer(model, opt):
         import apex
         static_loss_scale = opt.loss_scale
         dynamic_loss_scale = opt.loss_scale == 0
-        # TODO: clean this up when APEX unify its optimizer API.
-        if opt.optim.startswith('fused'):
-            namespace = apex.optimizers  # Faster wrapper.
-        else:
-            namespace = apex.fp16_utils
-        optimizer = namespace.FP16_Optimizer(
-            optimizer,
-            static_loss_scale=static_loss_scale,
-            dynamic_loss_scale=dynamic_loss_scale)
+        optimizer = apex.contrib.optimizers.FP16_Optimizer(
+                optimizer,
+                static_loss_scale=static_loss_scale,
+                dynamic_loss_scale=dynamic_loss_scale)
     return optimizer
 
 

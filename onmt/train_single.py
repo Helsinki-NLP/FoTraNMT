@@ -204,14 +204,22 @@ def main(opt, device_id):
             generators, src_vocabs, tgt_vocabs, checkpoint)
 
     n_params, enc, dec = _tally_parameters(model)
-    logger.info('encoder: %d' % enc)
-    logger.info('decoder: %d' % dec)
+    logger.info(f'total encoder parameters: {enc}')
+    logger.info(f'total encodes: {len(model.encoders)}')
+    for k,v in  model.encoder_ids.items():
+        n_current, _, _  = _tally_parameters(model.encoders[v])
+        logger.info(f'Enc [{v}]= name: {k}, params: {n_current}')
+    logger.info(f'total decoder parameters: {dec}')
+    logger.info(f'total encodes: {len(model.decoders)}')
+    for k,v in  model.decoder_ids.items():
+        n_current, _, _  = _tally_parameters(model.decoders[v])
+        logger.info(f'Dec [{v}]= name: {k}, params: {n_current}')
     logger.info('* number of parameters: %d' % n_params)
     _check_save_model_path(opt)
 
     # Build optimizer.
     optim = Optimizer.from_opt(model, opt, checkpoint=checkpoint)
-
+    
     # Build model saver
     model_saver = build_model_saver(model_opt, opt, model, Fields_dict, optim)
 

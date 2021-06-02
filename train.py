@@ -11,7 +11,6 @@ from onmt.utils.logging import logger
 from onmt.train_single import main as single_main
 from onmt.utils.parse import ArgumentParser
 
-from ipdb import launch_ipdb_on_exception
 
 def main(opt):
     ArgumentParser.validate_train_opts(opt)
@@ -107,6 +106,7 @@ if __name__ == "__main__":
     parser = _get_parser()
 
     opt = parser.parse_args()
-    with launch_ipdb_on_exception():
-        main(opt)
-    #main(opt)
+    #from ipdb import launch_ipdb_on_exception
+    #with launch_ipdb_on_exception():
+    #    main(opt)
+    main(opt)

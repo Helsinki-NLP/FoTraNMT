@@ -297,7 +297,16 @@ def build_base_model(model_opt, fields, gpu, checkpoint=None, gpu_id=None):
 
     return model
 
-def build_base_multitask_model(model_opt, fields, gpu, encoders, decoders, generators, src_vocabs, tgt_vocabs, checkpoint=None):
+def build_base_multitask_model(
+    model_opt, 
+    fields, 
+    gpu, 
+    encoders, 
+    decoders, 
+    generators, 
+    src_vocabs, 
+    tgt_vocabs, 
+    checkpoint=None):
     """
     Args:
         model_opt: the option loaded from checkpoint.
@@ -341,9 +350,11 @@ def build_base_multitask_model(model_opt, fields, gpu, encoders, decoders, gener
                 for p in generator.parameters():
                     if p.dim() > 1:
                         xavier_uniform_(p)
- 
+    
+    if model_opt.model_dtype == 'fp16':
+        model = model.half()
     model.to(device)
-
+    
     return model
 
 def build_model(model_opt, opt, fields, encoders, decoders, generators, src_vocabs, tgt_vocabs, checkpoint):

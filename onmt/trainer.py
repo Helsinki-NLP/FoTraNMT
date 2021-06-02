@@ -24,7 +24,15 @@ from onmt.utils.loss import build_loss_from_generator_and_vocab
 from collections import OrderedDict
 import numpy as np
 
-def build_trainer(opt, device_id, model, fields, optim, generators, tgt_vocabs,  model_saver=None):
+def build_trainer(
+    opt, 
+    device_id, 
+    model, 
+    fields, 
+    optim, 
+    generators, 
+    tgt_vocabs,  
+    model_saver=None):
     """
     Simplify `Trainer` creation based on user `opt`s*
 

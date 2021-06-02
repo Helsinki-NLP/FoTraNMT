@@ -68,7 +68,7 @@ do
       tgt_train_file=${bpe_trainfile}.${tgt_lang}
       src_valid_file=${bpe_validfile}.${src_lang}
       tgt_valid_file=${bpe_validfile}.${tgt_lang}
-      python $ONMT/preprocess.py \
+      python3 $ONMT/preprocess.py \
         -train_src $src_train_file \
         -train_tgt $tgt_train_file \
         -valid_src $src_valid_file \
@@ -83,10 +83,10 @@ done
 # ---------------------------------------------------------------------------------------------
 #     CREATE A VOCAB. FOR EACH LANGUAGE, USING ALL OF THE DATASETS FOR THAT LANGUAGE.
 #----------------------------------------------------------------------------------------------
-python $ONMT/preprocess_build_vocab.py \
+python3 $ONMT/preprocess_build_vocab.py \
     -train_dataset_prefixes $OUTPUT_DIR 
 
 # Fix vocabs
-python $ONMT/fix_vocab.py -l de en fr cs -b $OUTPUT_DIR -v m30k -n $OUTPUT_DIR
+python3 $ONMT/fix_vocab.py -l de en fr cs -b $OUTPUT_DIR -v m30k -n $OUTPUT_DIR
 
 cd $ONMT

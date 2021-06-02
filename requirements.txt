@@ -1,6 +1,5 @@
 six
 tqdm==4.30.*
-torch==1.1
 torchvision
 torchtext==0.6
 h5py
@@ -9,3 +8,4 @@ h5py
 future
 configargparse
 pyYAML
+torch==1.1
