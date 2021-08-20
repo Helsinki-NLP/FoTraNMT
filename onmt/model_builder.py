@@ -351,7 +351,8 @@ def build_base_multitask_model(
                     if p.dim() > 1:
                         xavier_uniform_(p)
     
-    if model_opt.model_dtype == 'fp16':
+    
+    if model_opt.model_dtype == 'fp16' and model_opt.optim == 'fusedadam':
         model = model.half()
     model.to(device)
     
