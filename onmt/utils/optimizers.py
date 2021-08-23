@@ -88,7 +88,7 @@ def build_torch_optimizer(model, opt):
         if opt.model_dtype == 'fp16':
             static_loss_scale = opt.loss_scale
             dynamic_loss_scale = opt.loss_scale == 0
-            optimizer = apex.contrib.optimizers.FP16_Optimizer(
+            optimizer = apex.fp16_utils.FP16_Optimizer(
                     optimizer,
                     static_loss_scale=static_loss_scale,
                     dynamic_loss_scale=dynamic_loss_scale)
@@ -335,7 +335,6 @@ class Optimizer(object):
         rate.
         """
         learning_rate = self.learning_rate()
-        import ipdb; ipdb.set_trace()
         if self._with_fp16_wrapper:
             if hasattr(self._optimizer, "update_master_grads"):
                 self._optimizer.update_master_grads()
