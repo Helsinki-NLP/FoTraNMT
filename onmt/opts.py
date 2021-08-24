@@ -596,6 +596,14 @@ def train_opts(parser):
     group.add('--use_attention_bridge', '-use_attention_bridge',
             action='store_true', help="""Use self-attention layer between
             enc and dec""")
+    group.add('--n_layers_attbrg', '-n_layers_ab', type=int, default=1,
+            help="""Number of layers for the attention bridge""")
+    group.add('--layer_type_attbrg', '-layer_type_ab', type=str, default="transformer",
+            choices=['transformer', 'fixed-size'],
+            help="""For an N-layered attention bridge, choose
+            whether the N-1 previous layers are transformer layers or
+            fixed-size inner-attention layers.
+            NOTE: for now, last layer in the att-brg is always fixed size. """)
     group.add('--attention_heads', '-attention_heads', type=int, default=4,
             help="""Number of attention heads in attention bridge""")
     group.add('--init_decoder', '-init_decoder', type=str, default="rnn_final_state",

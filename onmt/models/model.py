@@ -42,6 +42,7 @@ class MultiTaskModel(nn.Module):
         self.init_decoder = model_opt.init_decoder
 
         if self.use_attention_bridge:
+            model_opt.word_padding_idx = self.encoders[0].embeddings.word_padding_idx
             self.attention_bridge = AttentionBridge(model_opt.rnn_size, model_opt.attention_heads, model_opt)
 
             # Layers shared across language family
