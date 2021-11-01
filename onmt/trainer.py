@@ -294,11 +294,18 @@ class Trainer(object):
         langpairweights[1] = np.array(langpairweights[1])/sum(langpairweights[1])
         self.batches_info = {langpairweights[0][i]:round(langpairweights[1][i],2) for i in range(len(self.batches_info))}
         logger.info('Training loop will schedule -src_tgt pairs with weights given by: %s', self.batches_info)
+        step_count = 0
         while True:
-            #src_lang, tgt_lang = random.choice(list(train_iters.keys()))
-            src_lang, tgt_lang = random.choices(langpairweights[0],weights=list(langpairweights[1]))[0]
+            # src_lang, tgt_lang = random.choice(list(train_iters.keys()))
+            # src_lang, tgt_lang = random.choices(langpairweights[0],weights=list(langpairweights[1]))[0]
+            if step_count < len(langpairweights[0]):
+                src_lang, tgt_lang = langpairweights[0][step_count]
+                step_count += 1
+            else:
+                src_lang, tgt_lang = random.choices(langpairweights[0], weights=list(langpairweights[1]))[0]
+
             train_enum = train_iters[(src_lang, tgt_lang)]
-            #enum = enumerate(self._accum_batches(train_iter, tgt_lang))
+            # enum = enumerate(self._accum_batches(train_iter, tgt_lang))
 
             for i, (batches, normalization) in train_enum:
                 step = self.optim.training_step
