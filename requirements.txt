@@ -1,11 +1,9 @@
 six
-tqdm==4.30.*
+tqdm
 torchvision
-torchtext==0.6
+torchtext>=0.9
 h5py
-#http://download.pytorch.org/whl/torchaudio-0.2-cp36-cp36m-linux_x86_64.whl
-#librosa
 future
 configargparse
 pyYAML
-torch==1.1
+torch==1.8.1+cu111

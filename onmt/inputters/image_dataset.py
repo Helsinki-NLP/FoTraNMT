@@ -3,7 +3,7 @@
 import os
 
 import torch
-from torchtext.data import Field
+from torchtext.legacy.data import Field
 
 from onmt.inputters.datareader_base import DataReaderBase
 

@@ -4,8 +4,8 @@ from itertools import chain, starmap
 from collections import Counter
 
 import torch
-from torchtext.data import Dataset as TorchtextDataset
-from torchtext.data import Example
+from torchtext.legacy.data import Dataset as TorchtextDataset
+from torchtext.legacy.data import Example
 from torchtext.vocab import Vocab
 
 
@@ -34,11 +34,11 @@ def _dynamic_dict(example, src_field, tgt_field):
     Args:
         example (dict): An example dictionary with a ``"src"`` key and
             maybe a ``"tgt"`` key. (This argument changes in place!)
-        src_field (torchtext.data.Field): Field object.
-        tgt_field (torchtext.data.Field): Field object.
+        src_field (torchtext.legacy.data.Field): Field object.
+        tgt_field (torchtext.legacy.data.Field): Field object.
 
     Returns:
-        torchtext.data.Vocab and ``example``, changed as described.
+        torchtext.legacy.data.Vocab and ``example``, changed as described.
     """
 
     src = src_field.tokenize(example["src"])
@@ -67,7 +67,7 @@ class Dataset(TorchtextDataset):
     raw data should be processed to produce tensors. When a dataset is
     instantiated, it applies the fields' preprocessing pipeline (but not
     the bit that numericalizes it or turns it into batch tensors) to the raw
-    data, producing a list of :class:`torchtext.data.Example` objects.
+    data, producing a list of :class:`torchtext.legacy.data.Example` objects.
     torchtext's iterators then know how to use these examples to make batches.
 
     Args:
@@ -76,7 +76,7 @@ class Dataset(TorchtextDataset):
             that means the dataset side, ``"src"`` or ``"tgt"``. Keys match
             the keys of items yielded by the ``readers``, while values
             are lists of (name, Field) pairs. An attribute with this
-            name will be created for each :class:`torchtext.data.Example`
+            name will be created for each :class:`torchtext.legacy.data.Example`
             object and its value will be the result of applying the Field
             to the data that matches the key. The advantage of having
             sequences of fields for each piece of raw input is that it allows
@@ -93,14 +93,14 @@ class Dataset(TorchtextDataset):
             details on the ``Any`` type.)
         dirs (Iterable[str or NoneType]): A list of directories where
             data is contained. See the reader object for more details.
-        sort_key (Callable[[torchtext.data.Example], Any]): A function
+        sort_key (Callable[[torchtext.legacy.data.Example], Any]): A function
             for determining the value on which data is sorted (i.e. length).
-        filter_pred (Callable[[torchtext.data.Example], bool]): A function
+        filter_pred (Callable[[torchtext.legacy.data.Example], bool]): A function
             that accepts Example objects and returns a boolean value
             indicating whether to include that example in the dataset.
 
     Attributes:
-        src_vocabs (List[torchtext.data.Vocab]): Used with dynamic dict/copy
+        src_vocabs (List[torchtext.legacy.data.Vocab]): Used with dynamic dict/copy
             attention. There is a very short vocab for each src example.
             It contains just the source words, e.g. so that the generator can
             predict to copy them.

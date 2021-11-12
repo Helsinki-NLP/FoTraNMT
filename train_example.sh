@@ -31,9 +31,8 @@ python train.py -data data/sample_data/m30k.en-cs \
         -optim adam \
         -learning_rate 0.0002 \
         -save_checkpoint_steps 10000 \
-        -model_type text
-
-#        -world_size 1 -gpu_ranks 0
+        -model_type text \
+        -world_size 1 -gpu_ranks 0
 
 
 

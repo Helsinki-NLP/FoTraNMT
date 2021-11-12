@@ -68,9 +68,9 @@ def fixVocab(langs, basepath, vocabname, basepathNewVocab):
         for langTGT in langs:
             fields = {}
 
-            fields["src"] = torchtext.data.Field(
+            fields["src"] = torchtext.legacy.data.Field(
                 include_lengths=True)
-            fields["tgt"] = torchtext.data.Field(
+            fields["tgt"] = torchtext.legacy.data.Field(
                 pad_token=PAD_WORD)
 
             c_tgt = dictLangFreqs[langTGT]

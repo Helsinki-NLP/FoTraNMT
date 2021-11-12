@@ -3,7 +3,7 @@ from functools import partial
 
 import six
 import torch
-from torchtext.data import Field, RawField
+from torchtext.legacy.data import Field, RawField
 
 from onmt.inputters.datareader_base import DataReaderBase
 

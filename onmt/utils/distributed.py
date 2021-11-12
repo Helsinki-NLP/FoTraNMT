@@ -27,7 +27,7 @@ def multi_init(opt, device_id):
         world_size=dist_world_size, rank=opt.gpu_ranks[device_id])
     gpu_rank = torch.distributed.get_rank()
     if not is_master(opt, device_id):
-        logger.disabled = True
+        logger.disabled = False
 
     return gpu_rank
 
