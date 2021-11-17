@@ -489,19 +489,19 @@ class Trainer(object):
                                  and p[1].grad is not None]
                         onmt.utils.distributed.all_reduce_and_rescale_tensors(
                             grads, float(1))
-                        one_common_param_1 = [p[1].grad.data for p in self.model.named_parameters()
-                                             if p[1].requires_grad
-                                             and 'decoder' in p[0]
-                                             and p[1].grad is not None][0].flatten()
-                        one_encoder_param_1 = [p[1].grad.data for p in self.model.named_parameters()
-                                              if p[1].requires_grad
-                                              and 'encoder' in p[0]
-                                              and p[1].grad is not None][0].flatten()
-                        torch.distributed.barrier()
-                        if self.gpu_rank == 0:
-                           print('grad after reduction:')
-                        print('common:', self.gpu_rank, one_common_param_1[one_common_param_1.nonzero().squeeze()])
-                        print('encoder:', self.gpu_rank, one_encoder_param_1[one_encoder_param_1.nonzero().squeeze()])
+                        # one_common_param_1 = [p[1].grad.data for p in self.model.named_parameters()
+                        #                      if p[1].requires_grad
+                        #                      and 'decoder' in p[0]
+                        #                      and p[1].grad is not None][0].flatten()
+                        # one_encoder_param_1 = [p[1].grad.data for p in self.model.named_parameters()
+                        #                       if p[1].requires_grad
+                        #                       and 'encoder' in p[0]
+                        #                       and p[1].grad is not None][0].flatten()
+                        # torch.distributed.barrier()
+                        # if self.gpu_rank == 0:
+                        #    print('grad after reduction:')
+                        # print('common:', self.gpu_rank, one_common_param_1[one_common_param_1.nonzero().squeeze()])
+                        # print('encoder:', self.gpu_rank, one_encoder_param_1[one_encoder_param_1.nonzero().squeeze()])
                     self.optim.step()
 
                 # If truncated, don't backprop fully.
