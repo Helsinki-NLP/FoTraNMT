@@ -95,7 +95,8 @@ def build_trainer(
         batches_info = { tuple(opt.src_tgt[i].split('-')):[bsz,btype]  for i in range(len(opt.src_tgt))}
 
     if device_id >= 0:
-        gpu_rank = opt.gpu_ranks[device_id]
+        gpu_rank = device_id
+        # gpu_rank = opt.gpu_ranks[device_id % 4]
     else:
         gpu_rank = 0
         n_gpu = 0
@@ -111,7 +112,7 @@ def build_trainer(
                            accum_count, accum_steps,
                            n_gpu, gpu_rank,
                            gpu_verbose_level, report_manager,
-                           model_saver=model_saver if gpu_rank == 0 else None,
+                           model_saver=model_saver,
                            average_decay=average_decay,
                            average_every=average_every,
                            model_dtype=opt.model_dtype,
@@ -277,7 +278,7 @@ class Trainer(object):
         #train_iters = {k: (b for b in f())
         #        for k, f in train_iter_fcts.items()}
 
-        if self.n_gpu > 1:
+        if self.n_gpu < 0:
             train_iters = {k:
                 (enumerate(self._accum_batches(itertools.islice((b for b in f()), self.gpu_rank, None, self.n_gpu), k[1])))
                 for k, f in train_iter_fcts.items()}
@@ -294,18 +295,11 @@ class Trainer(object):
         langpairweights[1] = np.array(langpairweights[1])/sum(langpairweights[1])
         self.batches_info = {langpairweights[0][i]:round(langpairweights[1][i],2) for i in range(len(self.batches_info))}
         logger.info('Training loop will schedule -src_tgt pairs with weights given by: %s', self.batches_info)
-        step_count = 0
-        while True:
-            # src_lang, tgt_lang = random.choice(list(train_iters.keys()))
-            # src_lang, tgt_lang = random.choices(langpairweights[0],weights=list(langpairweights[1]))[0]
-            if step_count < len(langpairweights[0]):
-                src_lang, tgt_lang = langpairweights[0][step_count]
-                step_count += 1
-            else:
-                src_lang, tgt_lang = random.choices(langpairweights[0], weights=list(langpairweights[1]))[0]
 
+        while True:
+            src_lang, tgt_lang = langpairweights[0][self.gpu_rank]
             train_enum = train_iters[(src_lang, tgt_lang)]
-            # enum = enumerate(self._accum_batches(train_iter, tgt_lang))
+            #enum = enumerate(self._accum_batches(train_iter, tgt_lang))
 
             for i, (batches, normalization) in train_enum:
                 step = self.optim.training_step
@@ -341,17 +335,18 @@ class Trainer(object):
                     for lang_pair in valid_iters.items():
                         valid_iter_fct = lang_pair[1]
                         src_tgt = lang_pair[0]
-                        logger.info('Current language pair: {}'.format(src_tgt))
-                        if self.gpu_verbose_level > 0:
-                            logger.info('GpuRank %d: validate step %d' % (self.gpu_rank, step))
-                        valid_iter = valid_iter_fct()
-                        valid_stats = self.validate(valid_iter, src_tgt, moving_average=self.moving_average)
-                        if self.gpu_verbose_level > 0:
-                            logger.info('GpuRank %d: gather valid stat step %d' % (self.gpu_rank, step))
-                        valid_stats = self._maybe_gather_stats(valid_stats)
-                        if self.gpu_verbose_level > 0:
-                             logger.info('GpuRank %d: report stat step %d' % (self.gpu_rank, step))
-                        self._report_step(self.optim.learning_rate(), step, valid_stats=valid_stats)
+                        if src_tgt == (src_lang, tgt_lang):
+                            logger.info('Current language pair: {}'.format(src_tgt))
+                            if self.gpu_verbose_level > 0:
+                                logger.info('GpuRank %d: validate step %d' % (self.gpu_rank, step))
+                            valid_iter = valid_iter_fct()
+                            valid_stats = self.validate(valid_iter, src_tgt, moving_average=self.moving_average)
+                            if self.gpu_verbose_level > 0:
+                                logger.info('GpuRank %d: gather valid stat step %d' % (self.gpu_rank, step))
+                            valid_stats = self._maybe_gather_stats(valid_stats)
+                            if self.gpu_verbose_level > 0:
+                                 logger.info('GpuRank %d: report stat step %d' % (self.gpu_rank, step))
+                            self._report_step(self.optim.learning_rate(), step, valid_stats=valid_stats)
                     #Run patience mechanism
                     #if self.earlystopper is not None:
                     #    self.earlystopper(valid_stats, step)
@@ -483,12 +478,30 @@ class Trainer(object):
                 # 4. Update the parameters and statistics.
                 if self.accum_count == 1:
                     # Multi GPU gradient gather
+                    # print([p for p in self.model.named_parameters()])
                     if self.n_gpu > 1:
-                        grads = [p.grad.data for p in self.model.parameters()
-                                 if p.requires_grad
-                                 and p.grad is not None]
+                        # grads = [p.grad.data for p in self.model.parameters()
+                        #          if p.requires_grad
+                        #          and p.grad is not None]
+                        grads = [p[1].grad.data for p in self.model.named_parameters()
+                                 if p[1].requires_grad
+                                 and 'encoder' not in p[0]
+                                 and p[1].grad is not None]
                         onmt.utils.distributed.all_reduce_and_rescale_tensors(
                             grads, float(1))
+                        one_common_param_1 = [p[1].grad.data for p in self.model.named_parameters()
+                                             if p[1].requires_grad
+                                             and 'decoder' in p[0]
+                                             and p[1].grad is not None][0].flatten()
+                        one_encoder_param_1 = [p[1].grad.data for p in self.model.named_parameters()
+                                              if p[1].requires_grad
+                                              and 'encoder' in p[0]
+                                              and p[1].grad is not None][0].flatten()
+                        torch.distributed.barrier()
+                        if self.gpu_rank == 0:
+                           print('grad after reduction:')
+                        print('common:', self.gpu_rank, one_common_param_1[one_common_param_1.nonzero().squeeze()])
+                        print('encoder:', self.gpu_rank, one_encoder_param_1[one_encoder_param_1.nonzero().squeeze()])
                     self.optim.step()
 
                 # If truncated, don't backprop fully.

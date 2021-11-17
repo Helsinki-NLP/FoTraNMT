@@ -361,5 +361,6 @@ def build_base_multitask_model(
 def build_model(model_opt, opt, fields, encoders, decoders, generators, src_vocabs, tgt_vocabs, checkpoint):
     logger.info('Building model...')
     model = build_base_multitask_model(model_opt, fields, use_gpu(opt), encoders, decoders, generators, src_vocabs, tgt_vocabs, checkpoint)
-    logger.info(model)
+    # logger.info(model)
+    logger.info('Building model done!')
     return model

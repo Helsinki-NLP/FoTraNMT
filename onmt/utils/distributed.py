@@ -14,7 +14,7 @@ from onmt.utils.logging import logger
 
 
 def is_master(opt, device_id):
-    return opt.gpu_ranks[device_id] == 0
+    return device_id == 0
 
 
 def multi_init(opt, device_id):
@@ -24,7 +24,7 @@ def multi_init(opt, device_id):
     dist_world_size = opt.world_size
     torch.distributed.init_process_group(
         backend=opt.gpu_backend, init_method=dist_init_method,
-        world_size=dist_world_size, rank=opt.gpu_ranks[device_id])
+        world_size=dist_world_size, rank=device_id)
     gpu_rank = torch.distributed.get_rank()
     if not is_master(opt, device_id):
         logger.disabled = False

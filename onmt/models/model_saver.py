@@ -8,13 +8,14 @@ from onmt.utils.logging import logger
 from copy import deepcopy
 
 
-def build_model_saver(model_opt, opt, model, fields, optim):
+def build_model_saver(model_opt, opt, model, fields, optim, output_id):
     model_saver = ModelSaver(opt.save_model,
                              model,
                              model_opt,
                              fields,
                              optim,
-                             opt.keep_checkpoint)
+                             opt.keep_checkpoint,
+                             output_id)
     return model_saver
 
 
@@ -27,7 +28,7 @@ class ModelSaverBase(object):
     """
 
     def __init__(self, base_path, model, model_opt, fields, optim,
-                 keep_checkpoint=-1):
+                 keep_checkpoint=-1, output_id="0"):
         self.base_path = base_path
         self.model = model
         self.model_opt = model_opt
@@ -37,6 +38,7 @@ class ModelSaverBase(object):
         self.keep_checkpoint = keep_checkpoint
         if keep_checkpoint > 0:
             self.checkpoint_queue = deque([], maxlen=keep_checkpoint)
+        self.output_id = output_id
 
     def save(self, step, moving_average=None):
         """Main entry point for model saver
@@ -55,7 +57,7 @@ class ModelSaverBase(object):
         else:
             save_model = self.model
 
-        chkpt, chkpt_name = self._save(step, save_model)
+        chkpt, chkpt_name = self._save(step, save_model, self.output_id)
         self.last_saved_step = step
 
         if moving_average:
@@ -96,7 +98,7 @@ class ModelSaverBase(object):
 class ModelSaver(ModelSaverBase):
     """Simple model saver to filesystem"""
 
-    def _save(self, step, model):
+    def _save(self, step, model, output_id):
         real_model = (model.module
                       if isinstance(model, nn.DataParallel)
                       else model)
@@ -117,8 +119,8 @@ class ModelSaver(ModelSaverBase):
             'whole_model': self.model
         }
 
-        logger.info("Saving checkpoint %s_step_%d.pt" % (self.base_path, step))
-        checkpoint_path = '%s_step_%d.pt' % (self.base_path, step)
+        logger.info("Saving checkpoint %s_%s_step_%d.pt" % (self.base_path, output_id, step))
+        checkpoint_path = '%s_%s_step_%d.pt' % (self.base_path, output_id, step)
         torch.save(checkpoint, checkpoint_path)
         return checkpoint, checkpoint_path
 

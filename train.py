@@ -19,6 +19,11 @@ def main(opt):
 
     nb_gpu = len(opt.gpu_ranks)
 
+    node_name = os.environ["SLURMD_NODENAME"]
+    node_rank = 0
+    if str(node_name) != str(opt.master_ip):
+        node_rank = 1  # TODO: it works only on 2 nodes
+
     if opt.world_size > 1:
         mp = torch.multiprocessing.get_context('spawn')
         # Create a thread to listen for errors in the child processes.
@@ -27,8 +32,9 @@ def main(opt):
         # Train with multiprocessing.
         procs = []
         for device_id in range(nb_gpu):
+            dist_rank = nb_gpu * node_rank + device_id
             procs.append(mp.Process(target=run, args=(
-                opt, device_id, error_queue, ), daemon=True))
+                opt, dist_rank, error_queue, ), daemon=True))
             procs[device_id].start()
             logger.info(" Starting process pid: %d  " % procs[device_id].pid)
             error_handler.add_child(procs[device_id].pid)
@@ -45,9 +51,9 @@ def run(opt, device_id, error_queue):
     """ run process """
     try:
         gpu_rank = onmt.utils.distributed.multi_init(opt, device_id)
-        if gpu_rank != opt.gpu_ranks[device_id]:
-            raise AssertionError("An error occurred in \
-                  Distributed initialization")
+        # if gpu_rank != device_id:
+        #     raise AssertionError("An error occurred in \
+        #           Distributed initialization")
         single_main(opt, device_id)
     except KeyboardInterrupt:
         pass  # killed by parent, do nothing

@@ -64,9 +64,11 @@ def update_to_local_attr(attribute, index):
         attr = attribute
     return attr
 
-def main(opt, device_id):
+def main(opt, unique_device_id):
     # NOTE: It's important that ``opt`` has been validated and updated
     # at this point.
+    device_id = unique_device_id % 4
+
     configure_process(opt, device_id)
     init_logger(opt.log_file)
     assert len(opt.accum_count) == len(opt.accum_steps), \
@@ -149,7 +151,9 @@ def main(opt, device_id):
         # Build model.
         encoder, src_embeddings = build_embeddings_then_encoder(local_enc_dec_opts, fields)
 
-        encoders[src_lang] = encoder
+        # Consider only encoder corresponding to the rank
+        if index == unique_device_id:
+            encoders[src_lang] = encoder
 
         decoder, generator, tgt_embeddings = build_decoder_and_generator(local_enc_dec_opts, fields)
 
@@ -208,23 +212,23 @@ def main(opt, device_id):
     logger.info(f'total encodes: {len(model.encoders)}')
     for k,v in  model.encoder_ids.items():
         n_current, _, _  = _tally_parameters(model.encoders[v])
-        logger.info(f'Enc [{v}]= name: {k}, params: {n_current}')
-    logger.info(f'total decoder parameters: {dec}')
-    logger.info(f'total encodes: {len(model.decoders)}')
+        logger.info(f'[GPU ranks {unique_device_id},{device_id}] Enc [{v}]= name: {k}, params: {n_current}')
+    # logger.info(f'total decoder parameters: {dec}')
+    # logger.info(f'total encodes: {len(model.decoders)}')
     for k,v in  model.decoder_ids.items():
         n_current, _, _  = _tally_parameters(model.decoders[v])
-        logger.info(f'Dec [{v}]= name: {k}, params: {n_current}')
-    logger.info('* number of parameters: %d' % n_params)
+        logger.info(f'[GPU ranks {unique_device_id},{device_id}] Dec [{v}]= name: {k}, params: {n_current}')
+    # logger.info('* number of parameters: %d' % n_params)
     _check_save_model_path(opt)
 
     # Build optimizer.
     optim = Optimizer.from_opt(model, opt, checkpoint=checkpoint)
     
     # Build model saver
-    model_saver = build_model_saver(model_opt, opt, model, Fields_dict, optim)
+    model_saver = build_model_saver(model_opt, opt, model, Fields_dict, optim, unique_device_id)
 
     trainer = build_trainer(
-        opt, device_id, model, fields, optim, generators, tgt_vocabs,
+        opt, unique_device_id, model, fields, optim, generators, tgt_vocabs,
         model_saver=model_saver)
 
     # TODO: not implemented yet

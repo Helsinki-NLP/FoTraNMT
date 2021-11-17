@@ -6,13 +6,12 @@ SAVE_PATH=$ONMT/model/demo
 mkdir -p $SAVE_PATH
 
 python train.py -data data/sample_data/m30k.en-cs \
-                      data/sample_data/m30k.de-cs \
                       data/sample_data/m30k.fr-cs \
-        -src_tgt       en-cs   de-cs   fr-cs \
-        -lang_fam      fam1    fam1    fam2  \
-        -batch_size    2048    2048    2048 \
-        -batch_type    tokens  tokens  tokens \
-        -normalization tokens  tokens  tokens \
+        -src_tgt       en-cs   fr-cs \
+#        -lang_fam      fam1 \
+        -batch_size    2048 \
+        -batch_type    tokens \
+        -normalization tokens \
         -save_model ${SAVE_PATH}/MULTILINGUAL_MULTI \
         -use_attention_bridge \
         -attention_heads 20 \
@@ -32,7 +31,7 @@ python train.py -data data/sample_data/m30k.en-cs \
         -learning_rate 0.0002 \
         -save_checkpoint_steps 10000 \
         -model_type text \
-        -world_size 1 -gpu_ranks 0
+        -world_size 2 -gpu_ranks 0 1
 
 
 
