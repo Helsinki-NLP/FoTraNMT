@@ -19,10 +19,24 @@ def main(opt):
 
     nb_gpu = len(opt.gpu_ranks)
 
+    def parse_nodelist(env_node_list: str) -> list:
+        if "[" in env_node_list:
+            tmp = env_node_list.split("[")
+            prefix = tmp[0]
+            ids = tmp[-1].split(",")
+            out = [prefix + identifier for identifier in ids]
+        else:
+            out = list(env_node_list.replace("[", ""))
+        return [node_n.replace("]", "") for node_n in out]
+
     node_name = os.environ["SLURMD_NODENAME"]
+    node_list_str = os.environ["SLURM_NODELIST"]
+    node_list = parse_nodelist(node_list_str)
     node_rank = 0
     if str(node_name) != str(opt.master_ip):
-        node_rank = 1  # TODO: it works only on 2 nodes
+        node_list.remove(str(opt.master_ip))
+        assert str(node_name) in node_list
+        node_rank = node_list.index(str(node_name)) + 1
 
     if opt.world_size > 1:
         mp = torch.multiprocessing.get_context('spawn')
