@@ -137,16 +137,17 @@ def main(opt, unique_device_id):
         else:
             fields = vocab
 
-        # Report src and tgt vocab sizes, including for features
-        for side in ['src', 'tgt']:
-            f = fields[side]
-            try:
-                f_iter = iter(f)
-            except TypeError:
-                f_iter = [(side, f)]
-            for sn, sf in f_iter:
-                if sf.use_vocab:
-                    logger.info(' * %s vocab size = %d' % (sn, len(sf.vocab)))
+        if index == unique_device_id:
+            # Report src and tgt vocab sizes, including for features
+            for (side, lang_code) in [('src', src_lang), ('tgt', tgt_lang)]:
+                f = fields[side]
+                try:
+                    f_iter = iter(f)
+                except TypeError:
+                    f_iter = [(side, f)]
+                for sn, sf in f_iter:
+                    if sf.use_vocab:
+                        logger.info(' * {} ({}) vocab size = {}'.format(sn, lang_code, len(sf.vocab)))
 
         # Build model.
         encoder, src_embeddings = build_embeddings_then_encoder(local_enc_dec_opts, fields)
