@@ -23,8 +23,15 @@ def main(opt):
         if "[" in env_node_list:
             tmp = env_node_list.split("[")
             prefix = tmp[0]
-            ids = tmp[-1].split(",")
-            out = [prefix + identifier for identifier in ids]
+            ids = tmp[-1][:-1].split(",")
+            out = []
+            for identifier in ids:
+                if "-" in identifier:
+                    start_id, end_id = map(lambda x: int(x), identifier.split("-"))
+                    out += list(range(start_id, end_id + 1))
+                else:
+                    out.append(identifier)
+            out = [prefix + str(identifier) for identifier in out]
         else:
             out = env_node_list.split(",")
         return [node_n.replace("]", "") for node_n in out]
