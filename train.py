@@ -36,14 +36,16 @@ def main(opt):
             out = env_node_list.split(",")
         return [node_n.replace("]", "") for node_n in out]
 
-    node_name = os.environ["SLURMD_NODENAME"]
-    node_list_str = os.environ["SLURM_NODELIST"]
-    node_list = parse_nodelist(node_list_str)
     node_rank = 0
-    if str(node_name) != str(opt.master_ip):
-        node_list.remove(str(opt.master_ip))
-        assert str(node_name) in node_list
-        node_rank = node_list.index(str(node_name)) + 1
+    if nb_gpu != int(opt.world_size):
+        node_name = os.environ["SLURMD_NODENAME"]
+        node_list_str = os.environ["SLURM_NODELIST"]
+        node_list = parse_nodelist(node_list_str)
+
+        if str(node_name) != str(opt.master_ip):
+            node_list.remove(str(opt.master_ip))
+            assert str(node_name) in node_list
+            node_rank = node_list.index(str(node_name)) + 1
 
     if opt.world_size > 1:
         mp = torch.multiprocessing.get_context('spawn')
