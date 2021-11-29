@@ -26,7 +26,7 @@ def main(opt):
             ids = tmp[-1].split(",")
             out = [prefix + identifier for identifier in ids]
         else:
-            out = list(env_node_list.replace("[", ""))
+            out = env_node_list.split(",")
         return [node_n.replace("]", "") for node_n in out]
 
     node_name = os.environ["SLURMD_NODENAME"]
