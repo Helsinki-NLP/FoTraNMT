@@ -33,7 +33,7 @@ def multi_init(opt, device_id):
 
 
 def all_reduce_and_rescale_tensors(tensors, rescale_denom,
-                                   buffer_size=10485760):
+                                   buffer_size=10485760, group=None):
     """All-reduce and rescale tensors in chunks of the specified size.
 
     Args:
@@ -55,7 +55,10 @@ def all_reduce_and_rescale_tensors(tensors, rescale_denom,
             offset += numel
 
         # all-reduce and rescale
-        torch.distributed.all_reduce(buffer_t[:offset])
+        if group:
+            torch.distributed.all_reduce(buffer_t[:offset], group=group)
+        else:
+            torch.distributed.all_reduce(buffer_t[:offset]) #no idea why doesn't like group=None
         buffer_t.div_(rescale_denom)
 
         # copy all-reduced buffer back into tensors

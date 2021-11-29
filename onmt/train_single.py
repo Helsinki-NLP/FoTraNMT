@@ -2,6 +2,8 @@
 """Training on a single process."""
 import os
 
+import numpy as np
+
 import torch
 
 from onmt.inputters.inputter import build_dataset_iter, \
@@ -104,6 +106,16 @@ def main(opt, unique_device_id):
     firstTime=True
     weightToShare=None
 
+    # Create a lookup list for the GPU-allocations
+    num_pairs = len(opt.src_tgt)
+    pairs_per_gpu = num_pairs // opt.world_size
+    gpu_alloc_idx = [i for i in range(num_pairs) for _ in range(pairs_per_gpu)]
+    print(opt.src_tgt, 'pairs')
+    print(gpu_alloc_idx, 'gpu_alloc_indices')
+    # Empty lists to track encoder/decoder names on all gpus
+    encoder_list = []
+    decoder_list = []
+
     # we share the word embedding space when source lang and target lang are the same
     mapLang2Emb = {}
     #for (src_tgt_lang), data_path in zip(opt.src_tgt, opt.data):
@@ -153,12 +165,14 @@ def main(opt, unique_device_id):
         encoder, src_embeddings = build_embeddings_then_encoder(local_enc_dec_opts, fields)
 
         # Consider only encoder corresponding to the rank
-        if index == unique_device_id:
+        if gpu_alloc_idx[index] == unique_device_id:
             encoders[src_lang] = encoder
 
         decoder, generator, tgt_embeddings = build_decoder_and_generator(local_enc_dec_opts, fields)
 
-        decoders[tgt_lang] = decoder
+        # Consider only decoder corresponding to the rank
+        if gpu_alloc_idx[index] == unique_device_id:
+            decoders[tgt_lang] = decoder
 
         # Share the embedding matrix across all the encoders and decoders - preprocess with share_vocab required.
         if model_opt.share_embeddings and firstTime:
@@ -204,6 +218,29 @@ def main(opt, unique_device_id):
 
         Fields_dict[src_tgt_lang] = fields
 
+        # Track encoders and decoder names on all ranks to build communicators
+        encoder_list.append(src_lang)
+        decoder_list.append(tgt_lang)
+
+
+
+    encoder_splits = np.split(np.array(encoder_list), opt.world_size)
+    decoder_splits = np.split(np.array(decoder_list), opt.world_size)
+
+    all_enc_comms = []
+    for l in sorted(set(encoder_list)):
+        indices = [i for i, x in enumerate(encoder_splits) if l in x]
+        if len(indices) > 1:
+            print('Enc comm group {0}'.format(l), indices)
+            all_enc_comms.append(torch.distributed.new_group(indices))
+
+    all_dec_comms = []
+    for l in sorted(set(decoder_list)):
+        indices = [i for i, x in enumerate(decoder_splits) if l in x]
+        if len(indices) > 1: #maybe needs to add not in logic to remove duplicate comms
+            print('Dec comm group {0}'.format(l), indices)
+            all_dec_comms.append(torch.distributed.new_group(indices))
+
     # Build model.
     model = build_model(model_opt, opt, fields, encoders, decoders,
             generators, src_vocabs, tgt_vocabs, checkpoint)
@@ -229,7 +266,7 @@ def main(opt, unique_device_id):
     model_saver = build_model_saver(model_opt, opt, model, Fields_dict, optim, unique_device_id)
 
     trainer = build_trainer(
-        opt, unique_device_id, model, fields, optim, generators, tgt_vocabs,
+        opt, unique_device_id, all_enc_comms, all_dec_comms, model, fields, optim, generators, tgt_vocabs,
         model_saver=model_saver)
 
     # TODO: not implemented yet

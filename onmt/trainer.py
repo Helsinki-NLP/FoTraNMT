@@ -26,7 +26,9 @@ import numpy as np
 
 def build_trainer(
     opt, 
-    device_id, 
+    device_id,
+    all_enc_comms,
+    all_dec_comms,
     model, 
     fields, 
     optim, 
@@ -110,7 +112,7 @@ def build_trainer(
     trainer = onmt.Trainer(model, train_losses, valid_losses, optim, trunc_size,
                            shard_size, norm_method,
                            accum_count, accum_steps,
-                           n_gpu, gpu_rank,
+                           n_gpu, gpu_rank, all_enc_comms, all_dec_comms,
                            gpu_verbose_level, report_manager,
                            model_saver=model_saver,
                            average_decay=average_decay,
@@ -155,7 +157,7 @@ class Trainer(object):
                  trunc_size=0, shard_size=32,
                  norm_method="sents", accum_count=[1],
                  accum_steps=[0],
-                 n_gpu=1, gpu_rank=1,
+                 n_gpu=1, gpu_rank=1, all_enc_comms=None, all_dec_comms=None,
                  gpu_verbose_level=0, report_manager=None, model_saver=None,
                  average_decay=0, average_every=1, model_dtype='fp32',
                  earlystopper=None, dropout=[0.3], dropout_steps=[0],
@@ -173,6 +175,8 @@ class Trainer(object):
         self.accum_steps = accum_steps
         self.n_gpu = n_gpu
         self.gpu_rank = gpu_rank
+        self.all_enc_comms = all_enc_comms
+        self.all_dec_comms = all_dec_comms
         self.gpu_verbose_level = gpu_verbose_level
         self.report_manager = report_manager
         self.model_saver = model_saver
@@ -278,7 +282,7 @@ class Trainer(object):
         #train_iters = {k: (b for b in f())
         #        for k, f in train_iter_fcts.items()}
 
-        if self.n_gpu < 0:
+        if self.n_gpu < 0:  # TODO: This is a haaaaack!
             train_iters = {k:
                 (enumerate(self._accum_batches(itertools.islice((b for b in f()), self.gpu_rank, None, self.n_gpu), k[1])))
                 for k, f in train_iter_fcts.items()}
@@ -480,15 +484,43 @@ class Trainer(object):
                     # Multi GPU gradient gather
                     # print([p for p in self.model.named_parameters()])
                     if self.n_gpu > 1:
-                        # grads = [p.grad.data for p in self.model.parameters()
-                        #          if p.requires_grad
-                        #          and p.grad is not None]
+                        # Reduce all encoder grads for duplicate encoders using subcommunication groups
+                        #torch.distributed.barrier()
+                        for group in self.all_enc_comms:
+                            grads = [p[1].grad.data for p in self.model.named_parameters()
+                                     if p[1].requires_grad
+                                     and 'encoder' in p[0]
+                                     and p[1].grad is not None]
+                            onmt.utils.distributed.all_reduce_and_rescale_tensors(
+                                grads, float(1), group=group
+                            )
+                            #torch.cuda.synchronize()
+                            #torch.distributed.barrier()
+
+                        # Reduce all decoder grads for duplicate decoders using subcommunication groups
+                        for group in self.all_dec_comms:
+                            grads = [p[1].grad.data for p in self.model.named_parameters()
+                                     if p[1].requires_grad
+                                     and 'decoder' in p[0]
+                                     and p[1].grad is not None]
+                            onmt.utils.distributed.all_reduce_and_rescale_tensors(
+                                grads, float(1), group=group
+                            )
+                            #torch.cuda.synchronize()
+                            #torch.distributed.barrier()
+
+                        # Reduce all attention grads across the 'world'
                         grads = [p[1].grad.data for p in self.model.named_parameters()
                                  if p[1].requires_grad
-                                 and 'encoder' not in p[0]
+                                 and 'attention' in p[0]
                                  and p[1].grad is not None]
                         onmt.utils.distributed.all_reduce_and_rescale_tensors(
-                            grads, float(1))
+                            grads, float(1)
+                        )
+
+                        #torch.cuda.synchronize()
+                        #torch.distributed.barrier()
+
                         # one_common_param_1 = [p[1].grad.data for p in self.model.named_parameters()
                         #                      if p[1].requires_grad
                         #                      and 'decoder' in p[0]
