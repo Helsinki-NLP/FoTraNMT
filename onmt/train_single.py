@@ -10,6 +10,7 @@ from onmt.inputters.inputter import build_dataset_iter, \
     load_old_vocab, old_style_vocab, MultipleDatasetIterator
 from onmt.model_builder import build_model, build_embeddings_then_encoder, \
     build_decoder_and_generator
+from onmt.utils.distributed import is_master
 from onmt.utils.optimizers import Optimizer
 from onmt.utils.misc import set_random_seed
 from onmt.trainer import build_trainer
@@ -110,8 +111,9 @@ def main(opt, unique_device_id):
     num_pairs = len(opt.src_tgt)
     pairs_per_gpu = num_pairs // opt.world_size
     gpu_alloc_idx = [i for i in range(num_pairs) for _ in range(pairs_per_gpu)]
-    print(opt.src_tgt, 'pairs')
-    print(gpu_alloc_idx, 'gpu_alloc_indices')
+    if is_master(opt, unique_device_id):
+        logger.info('Pairs: {}'.format(opt.src_tgt))
+        logger.info('gpu_alloc_indices: {}'.format(gpu_alloc_idx))
     # Empty lists to track encoder/decoder names on all gpus
     encoder_list = []
     decoder_list = []
@@ -231,14 +233,16 @@ def main(opt, unique_device_id):
     for l in sorted(set(encoder_list)):
         indices = [i for i, x in enumerate(encoder_splits) if l in x]
         if len(indices) > 1:
-            print('Enc comm group {0}'.format(l), indices)
+            if is_master(opt, unique_device_id):
+                logger.info('Enc comm group {} {}'.format(l, indices))
             all_enc_comms.append(torch.distributed.new_group(indices))
 
     all_dec_comms = []
     for l in sorted(set(decoder_list)):
         indices = [i for i, x in enumerate(decoder_splits) if l in x]
         if len(indices) > 1: #maybe needs to add not in logic to remove duplicate comms
-            print('Dec comm group {0}'.format(l), indices)
+            if is_master(opt, unique_device_id):
+                logger.info('Dec comm group {} {}'.format(l, indices))
             all_dec_comms.append(torch.distributed.new_group(indices))
 
     # Build model.
