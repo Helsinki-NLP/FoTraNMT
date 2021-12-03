@@ -10,11 +10,12 @@ import onmt.modules
 from onmt.trainer import Trainer
 import sys
 import onmt.utils.optimizers
+import onmt.opts
 onmt.utils.optimizers.Optim = onmt.utils.optimizers.Optimizer
 sys.modules["onmt.Optim"] = onmt.utils.optimizers
 
 # For Flake
 __all__ = [onmt.inputters, onmt.encoders, onmt.decoders, onmt.models,
-           onmt.utils, onmt.modules, "Trainer"]
+           onmt.utils, onmt.modules, "Trainer", onmt.opts]
 
 __version__ = "0.9.0"
