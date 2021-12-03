@@ -4,6 +4,7 @@ import torch.nn as nn
 
 from collections import deque
 from onmt.utils.logging import logger
+from onmt.utils.module_splitter import explode_model
 
 from copy import deepcopy
 
@@ -55,7 +56,7 @@ class ModelSaverBase(object):
         else:
             save_model = self.model
 
-        chkpt, chkpt_name = self._save(step, save_model)
+        chkpt_names = self._save(step, save_model)
         self.last_saved_step = step
 
         if moving_average:
@@ -65,7 +66,7 @@ class ModelSaverBase(object):
             if len(self.checkpoint_queue) == self.checkpoint_queue.maxlen:
                 todel = self.checkpoint_queue.popleft()
                 self._rm_checkpoint(todel)
-            self.checkpoint_queue.append(chkpt_name)
+            self.checkpoint_queue.append(chkpt_names)
 
     def _save(self, step):
         """Save a resumable checkpoint.
@@ -117,10 +118,49 @@ class ModelSaver(ModelSaverBase):
             'whole_model': self.model
         }
 
-        logger.info("Saving checkpoint %s_step_%d.pt" % (self.base_path, step))
+        checkpoint_paths = []
+
+        logger.info("Saving full checkpoint %s_step_%d.pt" % (self.base_path, step))
         checkpoint_path = '%s_step_%d.pt' % (self.base_path, step)
         torch.save(checkpoint, checkpoint_path)
-        return checkpoint, checkpoint_path
+        checkpoint_paths.append(checkpoint_path)
 
-    def _rm_checkpoint(self, name):
-        os.remove(name)
+        encoders, decoders, attention_bridge, generators, model_frame = explode_model(checkpoint)
+
+        # TODO: refactor (in a dedicated saver class?)
+        # encoder modules
+        for i, encoder in enumerate(encoders):
+            checkpoint_path = "{}_step_{}_encoder_{}.pt".format(self.base_path, step, i)
+            logger.info("Saving encoder checkpoint {}".format(checkpoint_path))
+            torch.save(encoder, checkpoint_path)
+            checkpoint_paths.append(checkpoint_path)
+        # decoders modules
+        for i, decoder in enumerate(decoders):
+            checkpoint_path = "{}_step_{}_decoder_{}.pt".format(self.base_path, step, i)
+            logger.info("Saving decoder checkpoint {}".format(checkpoint_path))
+            torch.save(decoder, checkpoint_path)
+            checkpoint_paths.append(checkpoint_path)
+        # generator modules
+        for i, generator in enumerate(generators):
+            checkpoint_path = "{}_step_{}_generator_{}.pt".format(self.base_path, step, i)
+            logger.info("Saving generator checkpoint {}".format(checkpoint_path))
+            torch.save(generator, checkpoint_path)
+            checkpoint_paths.append(checkpoint_path)
+
+        # attention bridge module
+        checkpoint_path = "{}_step_{}_bridge.pt".format(self.base_path, step)
+        logger.info("Saving attention bridge checkpoint {}".format(checkpoint_path))
+        torch.save(attention_bridge, checkpoint_path)
+        checkpoint_paths.append(checkpoint_path)
+
+        # model frame
+        checkpoint_path = "{}_step_{}_frame.pt".format(self.base_path, step)
+        logger.info("Saving model frame checkpoint {}".format(checkpoint_path))
+        torch.save(model_frame, checkpoint_path)
+        checkpoint_paths.append(checkpoint_path)
+
+        return checkpoint_paths
+
+    def _rm_checkpoint(self, names):
+        for name in names:
+            os.remove(name)
