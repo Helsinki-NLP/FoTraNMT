@@ -1,15 +1,14 @@
-# !/bin/bash 
+#!/bin/bash
 
 # Train
 ONMT=`pwd`
 SAVE_PATH=$ONMT/model/demo
 mkdir -p $SAVE_PATH
 
-python train.py -data data/sample_data/m30k.en-cs \
-                      data/sample_data/m30k.de-cs \
-                      data/sample_data/m30k.fr-cs \
-        -src_tgt       en-cs   de-cs   fr-cs \
-        -lang_fam      fam1    fam1    fam2  \
+python train.py -data data/sample_data/m30k.en-de \
+                      data/sample_data/m30k.de-fr \
+                      data/sample_data/m30k.fr-en \
+        -src_tgt       en-de   de-fr   fr-en \
         -batch_size    2048    2048    2048 \
         -batch_type    tokens  tokens  tokens \
         -normalization tokens  tokens  tokens \
@@ -36,7 +35,6 @@ python train.py -data data/sample_data/m30k.en-cs \
 
 
 
-# IWSLT 2020 - EXAMPLE:
 
 DATAPATH=/path/to/ONMTpreprocessed/data/
 
