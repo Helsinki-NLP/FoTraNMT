@@ -1,28 +1,27 @@
 """ Report manager utility """
 from __future__ import print_function
+
 import time
 from datetime import datetime
 
 import onmt
-
 from onmt.utils.logging import logger
 
 
 def build_report_manager(opt):
     if opt.tensorboard:
         from tensorboardX import SummaryWriter
+
         tensorboard_log_dir = opt.tensorboard_log_dir
 
         if not opt.train_from:
             tensorboard_log_dir += datetime.now().strftime("/%b-%d_%H-%M-%S")
 
-        writer = SummaryWriter(tensorboard_log_dir,
-                               comment="Unmt")
+        writer = SummaryWriter(tensorboard_log_dir, comment="Unmt")
     else:
         writer = None
 
-    report_mgr = ReportMgr(opt.report_every, start_time=-1,
-                           tensorboard_writer=writer)
+    report_mgr = ReportMgr(opt.report_every, start_time=-1, tensorboard_writer=writer)
     return report_mgr
 
 
@@ -34,7 +33,7 @@ class ReportMgrBase(object):
         * `_report_step`
     """
 
-    def __init__(self, report_every, start_time=-1.):
+    def __init__(self, report_every, start_time=-1.0):
         """
         Args:
             report_every(int): Report status every this many sentences
@@ -51,8 +50,9 @@ class ReportMgrBase(object):
     def log(self, *args, **kwargs):
         logger.info(*args, **kwargs)
 
-    def report_training(self, step, num_steps, learning_rate,
-                        report_stats, src_tgt, multigpu=False):
+    def report_training(
+        self, step, num_steps, learning_rate, report_stats, src_tgt, multigpu=False
+    ):
         """
         This is the user-defined batch-level traing progress
         report function.
@@ -66,25 +66,34 @@ class ReportMgrBase(object):
             report_stats(Statistics): updated Statistics instance.
         """
         if self.start_time < 0:
-            raise ValueError("""ReportMgr needs to be started
-                                (set 'start_time' or use 'start()'""")
+            raise ValueError(
+                """ReportMgr needs to be started
+                                (set 'start_time' or use 'start()'"""
+            )
 
         if step % self.report_every == 0:
             # if multigpu:
             #     report_stats = \
             #         onmt.utils.Statistics.all_gather_stats(report_stats)
-            self._report_training(
-                step, num_steps, learning_rate, report_stats, src_tgt)
+            self._report_training(step, num_steps, learning_rate, report_stats, src_tgt)
             self.progress_step += 1
             return onmt.utils.Statistics()
         else:
             return report_stats
 
     def _report_training(self, *args, **kwargs):
-        """ To be overridden """
+        """To be overridden"""
         raise NotImplementedError()
 
-    def report_step(self, lr, step, train_stats=None, valid_stats=None, device_id=None, additional_info=None):
+    def report_step(
+        self,
+        lr,
+        step,
+        train_stats=None,
+        valid_stats=None,
+        device_id=None,
+        additional_info=None,
+    ):
         """
         Report stats of a step
 
@@ -96,7 +105,12 @@ class ReportMgrBase(object):
             additional_info: additional string to be added to the output log
         """
         self._report_step(
-            lr, step, train_stats=train_stats, valid_stats=valid_stats, device_id=device_id, additional_info=additional_info
+            lr,
+            step,
+            train_stats=train_stats,
+            valid_stats=valid_stats,
+            device_id=device_id,
+            additional_info=additional_info,
         )
 
     def _report_step(self, *args, **kwargs):
@@ -104,7 +118,7 @@ class ReportMgrBase(object):
 
 
 class ReportMgr(ReportMgrBase):
-    def __init__(self, report_every, start_time=-1., tensorboard_writer=None):
+    def __init__(self, report_every, start_time=-1.0, tensorboard_writer=None):
         """
         A report manager that writes statistics on standard output as well as
         (optionally) TensorBoard
@@ -119,46 +133,60 @@ class ReportMgr(ReportMgrBase):
 
     def maybe_log_tensorboard(self, stats, prefix, learning_rate, step):
         if self.tensorboard_writer is not None:
-            stats.log_tensorboard(
-                prefix, self.tensorboard_writer, learning_rate, step)
+            stats.log_tensorboard(prefix, self.tensorboard_writer, learning_rate, step)
 
-    def _report_training(self, step, num_steps, learning_rate,
-                         report_stats, src_tgt):
+    def _report_training(self, step, num_steps, learning_rate, report_stats, src_tgt):
         """
         See base class method `ReportMgrBase.report_training`.
         """
-        report_stats.output(step, num_steps,
-                            learning_rate, self.start_time, src_tgt)
+        report_stats.output(step, num_steps, learning_rate, self.start_time, src_tgt)
 
         # Log the progress using the number of batches on the x-axis.
-        self.maybe_log_tensorboard(report_stats,
-                                   "progress",
-                                   learning_rate,
-                                   self.progress_step)
+        self.maybe_log_tensorboard(
+            report_stats, "progress", learning_rate, self.progress_step
+        )
         report_stats = onmt.utils.Statistics()
 
         return report_stats
 
-    def _report_step(self, lr, step, train_stats=None, valid_stats=None, device_id=None, additional_info=None):
+    def _report_step(
+        self,
+        lr,
+        step,
+        train_stats=None,
+        valid_stats=None,
+        device_id=None,
+        additional_info=None,
+    ):
         """
         See base class method `ReportMgrBase.report_step`.
         """
         device_info = "GPU {} - ".format(device_id) if device_id is not None else ""
         additional_info = "{} ".format(additional_info) if additional_info else ""
         if train_stats is not None:
-            self.log(device_info + additional_info + 'Train perplexity: %g' % train_stats.ppl())
-            self.log(device_info + additional_info + 'Train accuracy: %g' % train_stats.accuracy())
+            self.log(
+                device_info
+                + additional_info
+                + "Train perplexity: %g" % train_stats.ppl()
+            )
+            self.log(
+                device_info
+                + additional_info
+                + "Train accuracy: %g" % train_stats.accuracy()
+            )
 
-            self.maybe_log_tensorboard(train_stats,
-                                       "train",
-                                       lr,
-                                       step)
+            self.maybe_log_tensorboard(train_stats, "train", lr, step)
 
         if valid_stats is not None:
-            self.log(device_info + additional_info + 'Validation perplexity: %g' % valid_stats.ppl())
-            self.log(device_info + additional_info + 'Validation accuracy: %g' % valid_stats.accuracy())
+            self.log(
+                device_info
+                + additional_info
+                + "Validation perplexity: %g" % valid_stats.ppl()
+            )
+            self.log(
+                device_info
+                + additional_info
+                + "Validation accuracy: %g" % valid_stats.accuracy()
+            )
 
-            self.maybe_log_tensorboard(valid_stats,
-                                       "valid",
-                                       lr,
-                                       step)
+            self.maybe_log_tensorboard(valid_stats, "valid", lr, step)

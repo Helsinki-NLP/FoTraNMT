@@ -9,20 +9,19 @@
           users of this library) for the strategy things we do.
 """
 
-from copy import deepcopy
 import itertools
+import traceback
+from collections import OrderedDict
+from copy import deepcopy
+
+import numpy as np
 import torch
 from torch.autograd import Variable
-import traceback
-import random
 
 import onmt.utils
 from onmt.utils.logging import logger
-
-#from onmt.utils.loss import build_loss_compute_generator
 from onmt.utils.loss import build_loss_from_generator_and_vocab
-from collections import OrderedDict
-import numpy as np
+
 
 def build_trainer(
     opt,
@@ -35,7 +34,8 @@ def build_trainer(
     optim,
     generators,
     tgt_vocabs,
-    model_saver=None):
+    model_saver=None,
+):
     """
     Simplify `Trainer` creation based on user `opt`s*
 
@@ -61,25 +61,15 @@ def build_trainer(
     valid_losses = OrderedDict()
     for tgt_lang, gen in generators.items():
         tgt_vocab = tgt_vocabs[tgt_lang]
-        train_losses[tgt_lang] = \
-            build_loss_from_generator_and_vocab(
-                tgt_field,
-                gen,
-                tgt_vocab,
-                opt,
-                train=True
+        train_losses[tgt_lang] = build_loss_from_generator_and_vocab(
+            tgt_field, gen, tgt_vocab, opt, train=True
         )
-        valid_losses[tgt_lang] = \
-            build_loss_from_generator_and_vocab(
-                tgt_field,
-                gen,
-                tgt_vocab,
-                opt,
-                train=False
-            )
+        valid_losses[tgt_lang] = build_loss_from_generator_and_vocab(
+            tgt_field, gen, tgt_vocab, opt, train=False
+        )
 
     trunc_size = opt.truncated_decoder  # Badly named...
-    shard_size = opt.max_generator_batches if opt.model_dtype == 'fp32' else 0
+    shard_size = opt.max_generator_batches if opt.model_dtype == "fp32" else 0
     norm_method = opt.normalization
     accum_count = opt.accum_count
     accum_steps = opt.accum_steps
@@ -90,49 +80,80 @@ def build_trainer(
     dropout_steps = opt.dropout_steps
     activate_extra_loss = opt.activate_extra_loss
     attention_heads = opt.attention_heads
-    if len(opt.src_tgt)== len(opt.batch_size) and len(opt.src_tgt) == len(opt.batch_type):
-        batches_info = { tuple(opt.src_tgt[i].split('-')):[opt.batch_size[i],opt.batch_type[i]]  for i in range(len(opt.src_tgt))}
+    if len(opt.src_tgt) == len(opt.batch_size) and len(opt.src_tgt) == len(
+        opt.batch_type
+    ):
+        batches_info = {
+            tuple(opt.src_tgt[i].split("-")): [opt.batch_size[i], opt.batch_type[i]]
+            for i in range(len(opt.src_tgt))
+        }
     else:
-        bsz=opt.batch_size.pop()
-        btype=opt.batch_type.pop()
-        batches_info = { tuple(opt.src_tgt[i].split('-')):[bsz,btype]  for i in range(len(opt.src_tgt))}
+        bsz = opt.batch_size.pop()
+        btype = opt.batch_type.pop()
+        batches_info = {
+            tuple(opt.src_tgt[i].split("-")): [bsz, btype]
+            for i in range(len(opt.src_tgt))
+        }
 
-    device_lang_pairs = [lang_pair for i, lang_pair in enumerate(opt.src_tgt) if gpu_allocation_indices[i] == device_id]
+    device_lang_pairs = [
+        lang_pair
+        for i, lang_pair in enumerate(opt.src_tgt)
+        if gpu_allocation_indices[i] == device_id
+    ]
     logger.info("GPU {} - device_lang_pairs = {}".format(device_id, device_lang_pairs))
-    batches_info_device = {k: v for k, v in batches_info.items() if "-".join(k) in device_lang_pairs}
-    logger.info("GPU {} - batches_info_device = {}".format(device_id, batches_info_device))
+    batches_info_device = {
+        k: v for k, v in batches_info.items() if "-".join(k) in device_lang_pairs
+    }
+    logger.info(
+        "GPU {} - batches_info_device = {}".format(device_id, batches_info_device)
+    )
 
     logger.info("GPU {} - encoder_ids = {}".format(device_id, model.encoder_ids))
     logger.info("GPU {} - decoder_ids = {}".format(device_id, model.decoder_ids))
 
     if device_id >= 0:
         gpu_rank = device_id
-        # gpu_rank = opt.gpu_ranks[device_id % 4]
     else:
         gpu_rank = 0
         n_gpu = 0
     gpu_verbose_level = opt.gpu_verbose_level
 
-    earlystopper = onmt.utils.EarlyStopping(
-        opt.early_stopping, scorers=onmt.utils.scorers_from_opts(opt)) \
-        if opt.early_stopping > 0 else None
+    early_stopper = (
+        onmt.utils.EarlyStopping(
+            opt.early_stopping, scorers=onmt.utils.scorers_from_opts(opt)
+        )
+        if opt.early_stopping > 0
+        else None
+    )
 
     report_manager = onmt.utils.build_report_manager(opt)
-    trainer = onmt.Trainer(model, train_losses, valid_losses, optim, trunc_size,
-                           shard_size, norm_method,
-                           accum_count, accum_steps,
-                           n_gpu, gpu_rank, all_enc_comms, all_dec_comms,
-                           gpu_verbose_level, report_manager,
-                           model_saver=model_saver,
-                           average_decay=average_decay,
-                           average_every=average_every,
-                           model_dtype=opt.model_dtype,
-                           earlystopper=earlystopper,
-                           dropout=dropout,
-                           dropout_steps=dropout_steps,
-                           activate_extra_loss=activate_extra_loss,
-                           attention_heads=attention_heads,
-                           batches_info=batches_info_device)
+    trainer = onmt.Trainer(
+        model,
+        train_losses,
+        valid_losses,
+        optim,
+        trunc_size,
+        shard_size,
+        norm_method,
+        accum_count,
+        accum_steps,
+        n_gpu,
+        gpu_rank,
+        all_enc_comms,
+        all_dec_comms,
+        gpu_verbose_level,
+        report_manager,
+        model_saver=model_saver,
+        average_decay=average_decay,
+        average_every=average_every,
+        model_dtype=opt.model_dtype,
+        earlystopper=early_stopper,
+        dropout=dropout,
+        dropout_steps=dropout_steps,
+        activate_extra_loss=activate_extra_loss,
+        attention_heads=attention_heads,
+        batches_info=batches_info_device,
+    )
     return trainer
 
 
@@ -162,15 +183,34 @@ class Trainer(object):
                 Thus nothing will be saved if this parameter is None
     """
 
-    def __init__(self, model, train_losses, valid_losses, optim,
-                 trunc_size=0, shard_size=32,
-                 norm_method="sents", accum_count=[1],
-                 accum_steps=[0],
-                 n_gpu=1, gpu_rank=1, all_enc_comms: OrderedDict = None, all_dec_comms: OrderedDict = None,
-                 gpu_verbose_level=0, report_manager=None, model_saver=None,
-                 average_decay=0, average_every=1, model_dtype='fp32',
-                 earlystopper=None, dropout=[0.3], dropout_steps=[0],
-                 activate_extra_loss=False, attention_heads=0,batches_info=None):
+    def __init__(
+        self,
+        model,
+        train_losses,
+        valid_losses,
+        optim,
+        trunc_size=0,
+        shard_size=32,
+        norm_method="sents",
+        accum_count=[1],
+        accum_steps=[0],
+        n_gpu=1,
+        gpu_rank=1,
+        all_enc_comms: OrderedDict = None,
+        all_dec_comms: OrderedDict = None,
+        gpu_verbose_level=0,
+        report_manager=None,
+        model_saver=None,
+        average_decay=0,
+        average_every=1,
+        model_dtype="fp32",
+        earlystopper=None,
+        dropout=[0.3],
+        dropout_steps=[0],
+        activate_extra_loss=False,
+        attention_heads=0,
+        batches_info=None,
+    ):
         # Basic attributes.
         self.model = model
         self.train_losses = train_losses
@@ -196,21 +236,23 @@ class Trainer(object):
         self.earlystopper = earlystopper
         self.dropout = dropout
         self.dropout_steps = dropout_steps
-        self.activate_extra_loss=activate_extra_loss
-        self.attention_heads=attention_heads
-        self.batches_info=batches_info
+        self.activate_extra_loss = activate_extra_loss
+        self.attention_heads = attention_heads
+        self.batches_info = batches_info
 
         for i in range(len(self.accum_count_l)):
             assert self.accum_count_l[i] > 0
             if self.accum_count_l[i] > 1:
-                assert self.trunc_size == 0, \
-                    """To enable accumulated gradients,
+                assert (
+                    self.trunc_size == 0
+                ), """To enable accumulated gradients,
                        you must disable target sequence truncating."""
 
         # Set model in training mode.
         self.model.train()
 
     def _accum_count(self, step):
+        _accum = None
         for i in range(len(self.accum_steps)):
             if step > self.accum_steps[i]:
                 _accum = self.accum_count_l[i]
@@ -220,8 +262,9 @@ class Trainer(object):
         for i in range(len(self.dropout_steps)):
             if step > 1 and step == self.dropout_steps[i] + 1:
                 self.model.update_dropout(self.dropout[i])
-                logger.info("Updated dropout to %f from step %d"
-                            % (self.dropout[i], step))
+                logger.info(
+                    "Updated dropout to %f from step %d" % (self.dropout[i], step)
+                )
 
     def _accum_batches(self, iterator, tgt_lang):
         batches = []
@@ -230,8 +273,11 @@ class Trainer(object):
         for batch in iterator:
             batches.append(batch)
             if self.norm_method == "tokens":
-                num_tokens = batch.tgt[1:, :, 0].ne(
-                    self.train_losses[tgt_lang].padding_idx).sum()
+                num_tokens = (
+                    batch.tgt[1:, :, 0]
+                    .ne(self.train_losses[tgt_lang].padding_idx)
+                    .sum()
+                )
                 normalization += num_tokens.item()
             else:
                 normalization += batch.batch_size
@@ -245,24 +291,27 @@ class Trainer(object):
 
     def _update_average(self, step):
         if self.moving_average is None:
-            copy_params = [params.detach().float()
-                           for params in self.model.parameters()]
+            copy_params = [
+                params.detach().float() for params in self.model.parameters()
+            ]
             self.moving_average = copy_params
         else:
-            average_decay = max(self.average_decay,
-                                1 - (step + 1)/(step + 10))
-            for (i, avg), cpt in zip(enumerate(self.moving_average),
-                                     self.model.parameters()):
-                self.moving_average[i] = \
-                    (1 - average_decay) * avg + \
-                    cpt.detach().float() * average_decay
+            average_decay = max(self.average_decay, 1 - (step + 1) / (step + 10))
+            for (i, avg), cpt in zip(
+                enumerate(self.moving_average), self.model.parameters()
+            ):
+                self.moving_average[i] = (
+                    1 - average_decay
+                ) * avg + cpt.detach().float() * average_decay
 
-    def train(self,
-              train_iter_fcts,
-              train_steps,
-              save_checkpoint_steps=5000,
-              valid_iters=None,
-              valid_steps=10000):
+    def train(
+        self,
+        train_iter_fcts,
+        train_steps,
+        save_checkpoint_steps=5000,
+        valid_iters=None,
+        valid_steps=10000,
+    ):
         """
         The main training loop by iterating over `train_iter` and possibly
         running validation on `valid_iter`.
@@ -279,35 +328,53 @@ class Trainer(object):
             The gathered statistics.
         """
         if valid_iters is None:
-            logger.info('Start training loop without validation...')
+            logger.info("Start training loop without validation...")
         else:
-            logger.info('Start training loop and validate every %d steps...',
-                        valid_steps)
+            logger.info(
+                "Start training loop and validate every %d steps...", valid_steps
+            )
 
         total_stats = onmt.utils.Statistics()
         report_stats = onmt.utils.Statistics()
         self._start_report_manager(start_time=total_stats.start_time)
 
-        #train_iters = {k: (b for b in f())
+        # train_iters = {k: (b for b in f())
         #        for k, f in train_iter_fcts.items()}
 
         if self.n_gpu < 0:  # TODO: This is a haaaaack!
-            train_iters = {k:
-                (self._accum_batches(itertools.islice((b for b in f()), self.gpu_rank, None, self.n_gpu), k[1]))
-                for k, f in train_iter_fcts.items()}
+            train_iters = {
+                k: (
+                    self._accum_batches(
+                        itertools.islice(
+                            (b for b in f()), self.gpu_rank, None, self.n_gpu
+                        ),
+                        k[1],
+                    )
+                )
+                for k, f in train_iter_fcts.items()
+            }
         else:
-            train_iters = {k:
-                (self._accum_batches((b for b in f()), k[1]))
-                for k, f in train_iter_fcts.items()}
+            train_iters = {
+                k: (self._accum_batches((b for b in f()), k[1]))
+                for k, f in train_iter_fcts.items()
+            }
 
-        langpairweights=[[],[]]
-        for k,x in self.batches_info.items():
+        langpairweights = [[], []]
+        for k, x in self.batches_info.items():
             langpairweights[0].append(k)
-            langpairweights[1].append(1/x[0] if x[1]=='sents' else 24/x[0]) # assum. avg sentlength of 24(token_bsz=4096 => sent_bsz=170)
-        #normalize weights
-        langpairweights[1] = np.array(langpairweights[1])/sum(langpairweights[1])
-        self.batches_info = {langpairweights[0][i]:round(langpairweights[1][i],2) for i in range(len(self.batches_info))}
-        logger.info('Training loop will schedule -src_tgt pairs with weights given by: %s', self.batches_info)
+            langpairweights[1].append(
+                1 / x[0] if x[1] == "sents" else 24 / x[0]
+            )  # assum. avg sentlength of 24(token_bsz=4096 => sent_bsz=170)
+        # normalize weights
+        langpairweights[1] = np.array(langpairweights[1]) / sum(langpairweights[1])
+        self.batches_info = {
+            langpairweights[0][i]: round(langpairweights[1][i], 2)
+            for i in range(len(self.batches_info))
+        }
+        logger.info(
+            "Training loop will schedule -src_tgt pairs with weights given by: %s",
+            self.batches_info,
+        )
 
         while True:
             src_langs = []
@@ -333,58 +400,77 @@ class Trainer(object):
                     logger.info("GpuRank %d: index: %d", self.gpu_rank, i)
                 if self.gpu_verbose_level > 0:
                     for batch in batches:
-                        logger.info("GpuRank %d: reduce_counter: %d \
+                        logger.info(
+                            "GpuRank %d: reduce_counter: %d \
                                     n_minibatch %d"
-                                    % (self.gpu_rank, i + 1, len(batch)))
+                            % (self.gpu_rank, i + 1, len(batch))
+                        )
 
                 if self.n_gpu > 1:
                     normalizations = [
-                        sum(onmt.utils.distributed.all_gather_list(normalization)) for normalization in normalizations
+                        sum(onmt.utils.distributed.all_gather_list(normalization))
+                        for normalization in normalizations
                     ]
 
                 self._gradient_accumulation(
-                    batches, normalizations, total_stats, src_langs, tgt_langs,
-                    report_stats, self.activate_extra_loss)
+                    batches,
+                    normalizations,
+                    total_stats,
+                    src_langs,
+                    tgt_langs,
+                    report_stats,
+                    self.activate_extra_loss,
+                )
 
                 if self.average_decay > 0 and i % self.average_every == 0:
                     self._update_average(step)
 
                 # stats are reported at the device level, as all language pairs are trained in the step
                 report_stats = self._maybe_report_training(
-                    step, train_steps,
+                    step,
+                    train_steps,
                     self.optim.learning_rate(),
-                    report_stats, ("GPU", str(self.gpu_rank)))
+                    report_stats,
+                    ("GPU", str(self.gpu_rank)),
+                )
 
                 if valid_iters is not None and step % valid_steps == 0:
                     for lang_pair in valid_iters.items():
                         valid_iter_fct = lang_pair[1]
                         src_tgt = lang_pair[0]
                         if self.gpu_verbose_level > 0:
-                            logger.info('GpuRank %d: validate step %d' % (self.gpu_rank, step))
+                            logger.info(
+                                "GpuRank %d: validate step %d" % (self.gpu_rank, step)
+                            )
                         valid_iter = valid_iter_fct()
-                        valid_stats = self.validate(valid_iter, src_tgt, moving_average=self.moving_average)
+                        valid_stats = self.validate(
+                            valid_iter, src_tgt, moving_average=self.moving_average
+                        )
                         # if self.gpu_verbose_level > 0:
                         #     logger.info('GpuRank %d: gather valid stat step %d' % (self.gpu_rank, step))
                         # valid_stats = self._maybe_gather_stats(valid_stats)
                         if self.gpu_verbose_level > 0:
-                            logger.info('GpuRank %d: report stat step %d' % (self.gpu_rank, step))
+                            logger.info(
+                                "GpuRank %d: report stat step %d"
+                                % (self.gpu_rank, step)
+                            )
                         self._report_step(
                             self.optim.learning_rate(),
                             step,
                             valid_stats=valid_stats,
                             device_id=self.gpu_rank,
-                            additional_info=src_tgt
+                            additional_info=src_tgt,
                         )
-                    #Run patience mechanism
-                    #if self.earlystopper is not None:
+                    # Run patience mechanism
+                    # if self.earlystopper is not None:
                     #    self.earlystopper(valid_stats, step)
                     #    # If the patience has reached the limit, stop training
                     #    if self.earlystopper.has_stopped():
                     #        break
 
-                if (self.model_saver is not None
-                    and (save_checkpoint_steps != 0
-                         and step % save_checkpoint_steps == 0)):
+                if self.model_saver is not None and (
+                    save_checkpoint_steps != 0 and step % save_checkpoint_steps == 0
+                ):
                     self.model_saver.save(step, moving_average=self.moving_average)
 
                 break
@@ -397,17 +483,15 @@ class Trainer(object):
         return total_stats
 
     def validate(self, valid_iter, src_tgt, moving_average=None):
-        """ Validate model.
+        """Validate model.
             valid_iter: validate data iterator
         Returns:
             :obj:`nmt.Statistics`: validation loss statistics
         """
         if moving_average:
             valid_model = deepcopy(self.model)
-            for avg, param in zip(self.moving_average,
-                                  valid_model.parameters()):
-                param.data = avg.data.half() if self.model_dtype == "fp16" \
-                    else avg.data
+            for avg, param in zip(self.moving_average, valid_model.parameters()):
+                param.data = avg.data.half() if self.model_dtype == "fp16" else avg.data
         else:
             valid_model = self.model
 
@@ -418,12 +502,15 @@ class Trainer(object):
             stats = onmt.utils.Statistics()
 
             for batch in valid_iter:
-                src, src_lengths = batch.src if isinstance(batch.src, tuple) \
-                                   else (batch.src, None)
+                src, src_lengths = (
+                    batch.src if isinstance(batch.src, tuple) else (batch.src, None)
+                )
                 tgt = batch.tgt
 
                 # F-prop through the model.
-                outputs, attns, alphas = valid_model(src, tgt, src_tgt[0], src_tgt[1], src_lengths)
+                outputs, attns, alphas = valid_model(
+                    src, tgt, src_tgt[0], src_tgt[1], src_lengths
+                )
 
                 # Compute loss.
                 _, batch_stats = self.valid_losses[src_tgt[1]](batch, outputs, attns)
@@ -439,15 +526,32 @@ class Trainer(object):
 
         return stats
 
-    def _gradient_accumulation(self, true_batches_langs, normalizations, total_stats,
-            src_langs, tgt_langs, report_stats, activate_extra_loss):
+    def _gradient_accumulation(
+        self,
+        true_batches_langs,
+        normalizations,
+        total_stats,
+        src_langs,
+        tgt_langs,
+        report_stats,
+        activate_extra_loss,
+    ):
         if self.accum_count > 1:
             self.optim.zero_grad()
 
         self.optim.zero_grad()
-        for (true_batches, normalization, src_lang, tgt_lang) in zip(true_batches_langs, normalizations, src_langs, tgt_langs):
+        for (true_batches, normalization, src_lang, tgt_lang) in zip(
+            true_batches_langs, normalizations, src_langs, tgt_langs
+        ):
 
-            I = Variable(torch.stack([torch.eye(self.attention_heads) for i in range(len(true_batches[0]))]))  # len(true_batchs[0] = true_batchs[0].__dict__['batch_size']
+            I = Variable(
+                torch.stack(
+                    [
+                        torch.eye(self.attention_heads)
+                        for i in range(len(true_batches[0]))
+                    ]
+                )
+            )  # len(true_batchs[0] = true_batchs[0].__dict__['batch_size']
             I = I.cuda() if self.n_gpu >= 1 else I
 
             for k, batch in enumerate(true_batches):
@@ -458,22 +562,25 @@ class Trainer(object):
                 else:
                     trunc_size = target_size
 
-                src, src_lengths = batch.src if isinstance(batch.src, tuple) \
-                    else (batch.src, None)
+                src, src_lengths = (
+                    batch.src if isinstance(batch.src, tuple) else (batch.src, None)
+                )
                 if src_lengths is not None:
                     report_stats.n_src_words += src_lengths.sum().item()
 
                 tgt_outer = batch.tgt
 
                 bptt = False
-                for j in range(0, target_size-1, trunc_size):
+                for j in range(0, target_size - 1, trunc_size):
                     # 1. Create truncated target.
-                    tgt = tgt_outer[j: j + trunc_size]
+                    tgt = tgt_outer[j : j + trunc_size]
 
                     # 2. F-prop all but generator.
                     # if self.accum_count == 1:
                     #     self.optim.zero_grad()
-                    outputs, attns, alphasZ = self.model(src, tgt, src_lang, tgt_lang, src_lengths, bptt=bptt)
+                    outputs, attns, alphas_z = self.model(
+                        src, tgt, src_lang, tgt_lang, src_lengths, bptt=bptt
+                    )
                     bptt = True
 
                     # 3. Compute loss.
@@ -486,9 +593,10 @@ class Trainer(object):
                             shard_size=self.shard_size,
                             trunc_start=j,
                             trunc_size=trunc_size,
-                            alphasZ=alphasZ,
+                            alphasZ=alphas_z,
                             I=I,
-                            activate_extra_loss=activate_extra_loss)
+                            activate_extra_loss=activate_extra_loss,
+                        )
 
                         if loss is not None:
                             self.optim.backward(loss)
@@ -498,8 +606,11 @@ class Trainer(object):
 
                     except Exception:
                         traceback.print_exc()
-                        logger.info("At step %d, we removed a batch - accum %d",
-                                    self.optim.training_step, k)
+                        logger.info(
+                            "At step %d, we removed a batch - accum %d",
+                            self.optim.training_step,
+                            k,
+                        )
 
         # 4. Update the parameters and statistics.
         if self.accum_count == 1:
@@ -507,31 +618,51 @@ class Trainer(object):
             if self.n_gpu > 1:
                 # Reduce all encoder grads for duplicate encoders using subcommunication groups
                 for group_lang, group in self.all_enc_comms.items():
-                    if group_lang in src_langs:  # not all communication group languages are present in every device
-                        grads = [p[1].grad.data for p in self.model.named_parameters()
-                                 if p[1].requires_grad
-                                 and p[0].startswith('encoders.{}'.format(self.model.encoder_ids[group_lang]))
-                                 and p[1].grad is not None]
+                    if (
+                        group_lang in src_langs
+                    ):  # not all communication group languages are present in every device
+                        grads = [
+                            p[1].grad.data
+                            for p in self.model.named_parameters()
+                            if p[1].requires_grad
+                            and p[0].startswith(
+                                "encoders.{}".format(self.model.encoder_ids[group_lang])
+                            )
+                            and p[1].grad is not None
+                        ]
                         # logger.info("GPU {} - Enc: group_lang = {}, len(grads) = {}".format(self.gpu_rank, group_lang, len(grads)))
                         # logger.info("GPU {} BEFORE - Enc: group_lang = {}, grads = {}".format(self.gpu_rank, group_lang, grads[2][:10]))
                         onmt.utils.distributed.all_reduce_and_rescale_tensors(
                             grads, float(1), group=group
                         )
                         # logger.info("GPU {} AFTER - Enc: group_lang = {}, grads = {}".format(self.gpu_rank, group_lang, grads[2][:10]))
-                    #torch.cuda.synchronize()
-                    #torch.distributed.barrier()
+                    # torch.cuda.synchronize()
+                    # torch.distributed.barrier()
 
                 # Reduce all decoder grads for duplicate decoders using subcommunication groups
                 for group_lang, group in self.all_dec_comms.items():
-                    if group_lang in tgt_langs:  # not all communication group languages are present in every device
+                    if (
+                        group_lang in tgt_langs
+                    ):  # not all communication group languages are present in every device
                         # decoders
-                        grads = [p[1].grad.data for p in self.model.named_parameters()
-                                 if p[1].requires_grad
-                                 and (
-                                     p[0].startswith('decoders.{}'.format(self.model.decoder_ids[group_lang]))
-                                     or p[0].startswith('generators.{}'.format(self.model.decoder_ids[group_lang]))
-                                 )
-                                 and p[1].grad is not None]
+                        grads = [
+                            p[1].grad.data
+                            for p in self.model.named_parameters()
+                            if p[1].requires_grad
+                            and (
+                                p[0].startswith(
+                                    "decoders.{}".format(
+                                        self.model.decoder_ids[group_lang]
+                                    )
+                                )
+                                or p[0].startswith(
+                                    "generators.{}".format(
+                                        self.model.decoder_ids[group_lang]
+                                    )
+                                )
+                            )
+                            and p[1].grad is not None
+                        ]
                         # logger.info("GPU {} - Dec: group_lang = {}, len(grads) = {}".format(self.gpu_rank, group_lang, len(grads)))
                         # logger.info("GPU {} BEFORE - Dec: group_lang = {}, grads = {}".format(self.gpu_rank, group_lang, grads[2][:10]))
                         onmt.utils.distributed.all_reduce_and_rescale_tensors(
@@ -540,44 +671,29 @@ class Trainer(object):
                         # logger.info("GPU {} AFTER - Dec: group_lang = {}, grads = {}".format(self.gpu_rank, group_lang, grads[2][:10]))
 
                 # Reduce all attention grads across the 'world'
-                grads = [p[1].grad.data for p in self.model.named_parameters()
-                         if p[1].requires_grad
-                         and 'attention' in p[0]
-                         and p[1].grad is not None]
-                onmt.utils.distributed.all_reduce_and_rescale_tensors(
-                    grads, float(1)
-                )
+                grads = [
+                    p[1].grad.data
+                    for p in self.model.named_parameters()
+                    if p[1].requires_grad
+                    and "attention" in p[0]
+                    and p[1].grad is not None
+                ]
+                onmt.utils.distributed.all_reduce_and_rescale_tensors(grads, float(1))
 
-                #torch.cuda.synchronize()
-                #torch.distributed.barrier()
-
-                # one_common_param_1 = [p[1].grad.data for p in self.model.named_parameters()
-                #                      if p[1].requires_grad
-                #                      and 'decoder' in p[0]
-                #                      and p[1].grad is not None][0].flatten()
-                # one_encoder_param_1 = [p[1].grad.data for p in self.model.named_parameters()
-                #                       if p[1].requires_grad
-                #                       and 'encoder' in p[0]
-                #                       and p[1].grad is not None][0].flatten()
-                # torch.distributed.barrier()
-                # if self.gpu_rank == 0:
-                #    print('grad after reduction:')
-                # print('common:', self.gpu_rank, one_common_param_1[one_common_param_1.nonzero().squeeze()])
-                # print('encoder:', self.gpu_rank, one_encoder_param_1[one_encoder_param_1.nonzero().squeeze()])
             self.optim.step()
 
-                # TODO: ???
-                # # If truncated, don't backprop fully.
-                # # TO CHECK
-                # # if dec_state is not None:
-                # #    dec_state.detach()
-                # """
-                # if self.model.decoder.state is not None:
-                #     self.model.decoder.detach_state()
-                # """
-                # decoder_id = self.model.decoder_ids[tgt_lang]
-                # if self.model.decoders[decoder_id].state is not None:
-                #     self.model.decoders[decoder_id].detach_state()
+            # TODO: ???
+            # # If truncated, don't backprop fully.
+            # # TO CHECK
+            # # if dec_state is not None:
+            # #    dec_state.detach()
+            # """
+            # if self.model.decoder.state is not None:
+            #     self.model.decoder.detach_state()
+            # """
+            # decoder_id = self.model.decoder_ids[tgt_lang]
+            # if self.model.decoders[decoder_id].state is not None:
+            #     self.model.decoders[decoder_id].detach_state()
 
         # TODO: ???
         # # in case of multi step gradient accumulation,
@@ -616,24 +732,42 @@ class Trainer(object):
             return onmt.utils.Statistics.all_gather_stats(stat)
         return stat
 
-    def _maybe_report_training(self, step, num_steps, learning_rate,
-                               report_stats, src_tgt):
+    def _maybe_report_training(
+        self, step, num_steps, learning_rate, report_stats, src_tgt
+    ):
         """
         Simple function to report training stats (if report_manager is set)
         see `onmt.utils.ReportManagerBase.report_training` for doc
         """
         if self.report_manager is not None:
             return self.report_manager.report_training(
-                step, num_steps, learning_rate, report_stats, src_tgt,
-                multigpu=self.n_gpu > 1)
+                step,
+                num_steps,
+                learning_rate,
+                report_stats,
+                src_tgt,
+                multigpu=self.n_gpu > 1,
+            )
 
-    def _report_step(self, learning_rate, step, train_stats=None,
-                     valid_stats=None, device_id=None, additional_info=None):
+    def _report_step(
+        self,
+        learning_rate,
+        step,
+        train_stats=None,
+        valid_stats=None,
+        device_id=None,
+        additional_info=None,
+    ):
         """
         Simple function to report stats (if report_manager is set)
         see `onmt.utils.ReportManagerBase.report_step` for doc
         """
         if self.report_manager is not None:
             return self.report_manager.report_step(
-                learning_rate, step, train_stats=train_stats,
-                valid_stats=valid_stats, device_id=device_id, additional_info=additional_info)
+                learning_rate,
+                step,
+                train_stats=train_stats,
+                valid_stats=valid_stats,
+                device_id=device_id,
+                additional_info=additional_info,
+            )

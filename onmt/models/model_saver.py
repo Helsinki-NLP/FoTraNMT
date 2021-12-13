@@ -129,7 +129,7 @@ class ModelSaver(ModelSaverBase):
             torch.save(dec_chkpt, dec_chkpt_path)
             checkpoint_paths.append(dec_chkpt_path)
 
-        if is_master(0, output_id):
+        if is_master(output_id):
             # TODO: not sure how to deal with model_state_dict, fields, model_opt and optim.state_dict() in a multi-gpu
             #  setting. Is it OK to save only from master?
             model_state_dict = real_model.state_dict()
