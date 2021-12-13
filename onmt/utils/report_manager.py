@@ -84,7 +84,7 @@ class ReportMgrBase(object):
         """ To be overridden """
         raise NotImplementedError()
 
-    def report_step(self, lr, step, train_stats=None, valid_stats=None):
+    def report_step(self, lr, step, train_stats=None, valid_stats=None, device_id=None, additional_info=None):
         """
         Report stats of a step
 
@@ -92,9 +92,12 @@ class ReportMgrBase(object):
             train_stats(Statistics): training stats
             valid_stats(Statistics): validation stats
             lr(float): current learning rate
+            device_id: device id to be reported in the logs
+            additional_info: additional string to be added to the output log
         """
         self._report_step(
-            lr, step, train_stats=train_stats, valid_stats=valid_stats)
+            lr, step, train_stats=train_stats, valid_stats=valid_stats, device_id=device_id, additional_info=additional_info
+        )
 
     def _report_step(self, *args, **kwargs):
         raise NotImplementedError()
@@ -136,13 +139,15 @@ class ReportMgr(ReportMgrBase):
 
         return report_stats
 
-    def _report_step(self, lr, step, train_stats=None, valid_stats=None):
+    def _report_step(self, lr, step, train_stats=None, valid_stats=None, device_id=None, additional_info=None):
         """
         See base class method `ReportMgrBase.report_step`.
         """
+        device_info = "GPU {} - ".format(device_id) if device_id is not None else ""
+        additional_info = "{} ".format(additional_info) if additional_info else ""
         if train_stats is not None:
-            self.log('Train perplexity: %g' % train_stats.ppl())
-            self.log('Train accuracy: %g' % train_stats.accuracy())
+            self.log(device_info + additional_info + 'Train perplexity: %g' % train_stats.ppl())
+            self.log(device_info + additional_info + 'Train accuracy: %g' % train_stats.accuracy())
 
             self.maybe_log_tensorboard(train_stats,
                                        "train",
@@ -150,8 +155,8 @@ class ReportMgr(ReportMgrBase):
                                        step)
 
         if valid_stats is not None:
-            self.log('Validation perplexity: %g' % valid_stats.ppl())
-            self.log('Validation accuracy: %g' % valid_stats.accuracy())
+            self.log(device_info + additional_info + 'Validation perplexity: %g' % valid_stats.ppl())
+            self.log(device_info + additional_info + 'Validation accuracy: %g' % valid_stats.accuracy())
 
             self.maybe_log_tensorboard(valid_stats,
                                        "valid",

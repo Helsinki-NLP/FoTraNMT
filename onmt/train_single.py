@@ -1,24 +1,23 @@
 #!/usr/bin/env python
 """Training on a single process."""
 import os
+from collections import OrderedDict
 
 import numpy as np
-
 import torch
 
 from onmt.inputters.inputter import build_dataset_iter, \
-    load_old_vocab, old_style_vocab, MultipleDatasetIterator
+    load_old_vocab, old_style_vocab
 from onmt.model_builder import build_model, build_embeddings_then_encoder, \
     build_decoder_and_generator
-from onmt.utils.distributed import is_master
-from onmt.utils.optimizers import Optimizer
-from onmt.utils.misc import set_random_seed
-from onmt.trainer import build_trainer
 from onmt.models import build_model_saver
+from onmt.trainer import build_trainer
+from onmt.utils.distributed import is_master
 from onmt.utils.logging import init_logger, logger
+from onmt.utils.misc import set_random_seed
+from onmt.utils.optimizers import Optimizer
 from onmt.utils.parse import ArgumentParser
 
-from collections import OrderedDict
 
 def _check_save_model_path(opt):
     save_model_path = os.path.abspath(opt.save_model)
@@ -43,6 +42,7 @@ def configure_process(opt, device_id):
         torch.cuda.set_device(device_id)
     set_random_seed(opt.seed, device_id >= 0)
 
+
 def build_dataset_iter_fct(dataset_name, fields_, opt_, data_path, is_train=True):
 
     def train_iter_wrapper():
@@ -51,10 +51,12 @@ def build_dataset_iter_fct(dataset_name, fields_, opt_, data_path, is_train=True
 
     return train_iter_wrapper
 
+
 class AttrDict(dict):
     def __init__(self, *args, **kwargs):
         super(AttrDict, self).__init__(*args, **kwargs)
         self.__dict__ = self
+
 
 def update_to_local_attr(attribute, index):
     'return local attribure for encoders and decoders'
@@ -66,6 +68,7 @@ def update_to_local_attr(attribute, index):
     else:
         attr = attribute
     return attr
+
 
 def main(opt, unique_device_id):
     # NOTE: It's important that ``opt`` has been validated and updated
@@ -90,7 +93,7 @@ def main(opt, unique_device_id):
     else:
         checkpoint = None
         model_opt = opt
-        #vocab = torch.load(opt.data + '.vocab.pt')
+        # vocab = torch.load(opt.data + '.vocab.pt')
 
     train_iters = OrderedDict()
     valid_iters = OrderedDict()
@@ -104,13 +107,15 @@ def main(opt, unique_device_id):
     Fields_dict = OrderedDict()
 
     # variables needed for sharing the same embedding matrix across encoders and decoders
-    firstTime=True
-    weightToShare=None
+    first_time = True
+    weight_to_share = None
 
     # Create a lookup list for the GPU-allocations
     num_pairs = len(opt.src_tgt)
     pairs_per_gpu = num_pairs // opt.world_size
-    gpu_alloc_idx = [i for i in range(num_pairs) for _ in range(pairs_per_gpu)]
+    gpu_alloc_idx = []
+    for i in range(opt.world_size):
+        gpu_alloc_idx += [i] * pairs_per_gpu
     if is_master(opt, unique_device_id):
         logger.info('Pairs: {}'.format(opt.src_tgt))
         logger.info('gpu_alloc_indices: {}'.format(gpu_alloc_idx))
@@ -119,25 +124,24 @@ def main(opt, unique_device_id):
     decoder_list = []
 
     # we share the word embedding space when source lang and target lang are the same
-    mapLang2Emb = {}
-    #for (src_tgt_lang), data_path in zip(opt.src_tgt, opt.data):
+    map_lang2_emb = {}
+    # for (src_tgt_lang), data_path in zip(opt.src_tgt, opt.data):
     for index in range(len(opt.src_tgt)):
         src_tgt_lang = opt.src_tgt[index]
         data_path = opt.data[index]
-        local_enc_dec_opts = AttrDict({key:model_opt.__dict__[key] for key in model_opt.__dict__.keys()})
-        local_enc_dec_opts.model_type        = update_to_local_attr(model_opt.model_type, index)
+        local_enc_dec_opts = AttrDict({key: model_opt.__dict__[key] for key in model_opt.__dict__.keys()})
+        local_enc_dec_opts.model_type = update_to_local_attr(model_opt.model_type, index)
         local_enc_dec_opts.audio_enc_pooling = update_to_local_attr(model_opt.audio_enc_pooling, index)
-        local_enc_dec_opts.n_mels            = update_to_local_attr(model_opt.n_mels, index)
-        local_enc_dec_opts.n_stacked_mels    = update_to_local_attr(model_opt.n_stacked_mels, index)
-        local_enc_dec_opts.enc_layers        = update_to_local_attr(model_opt.enc_layers, index) 
-        local_enc_dec_opts.dec_layers        = update_to_local_attr(model_opt.dec_layers, index)
-        local_enc_dec_opts.rnn_type          = update_to_local_attr(model_opt.rnn_type, index)
-        local_enc_dec_opts.encoder_type      = update_to_local_attr(model_opt.encoder_type, index)
-        local_enc_dec_opts.batch_size        = update_to_local_attr(opt.batch_size, index)
-        local_enc_dec_opts.batch_type        = update_to_local_attr(opt.batch_type, index)
-        local_enc_dec_opts.normalization     = update_to_local_attr(model_opt.normalization, index)
-        #local_enc_dec_opts.dec_rnn_size = model_opt.dec_rnn_size[index]
-
+        local_enc_dec_opts.n_mels = update_to_local_attr(model_opt.n_mels, index)
+        local_enc_dec_opts.n_stacked_mels = update_to_local_attr(model_opt.n_stacked_mels, index)
+        local_enc_dec_opts.enc_layers = update_to_local_attr(model_opt.enc_layers, index)
+        local_enc_dec_opts.dec_layers = update_to_local_attr(model_opt.dec_layers, index)
+        local_enc_dec_opts.rnn_type = update_to_local_attr(model_opt.rnn_type, index)
+        local_enc_dec_opts.encoder_type = update_to_local_attr(model_opt.encoder_type, index)
+        local_enc_dec_opts.batch_size = update_to_local_attr(opt.batch_size, index)
+        local_enc_dec_opts.batch_type = update_to_local_attr(opt.batch_type, index)
+        local_enc_dec_opts.normalization = update_to_local_attr(model_opt.normalization, index)
+        # local_enc_dec_opts.dec_rnn_size = model_opt.dec_rnn_size[index]
 
         src_lang, tgt_lang = src_tgt_lang.split('-')
 
@@ -151,7 +155,7 @@ def main(opt, unique_device_id):
         else:
             fields = vocab
 
-        if index == unique_device_id:
+        if is_master(opt, unique_device_id):
             # Report src and tgt vocab sizes, including for features
             for (side, lang_code) in [('src', src_lang), ('tgt', tgt_lang)]:
                 f = fields[side]
@@ -177,46 +181,37 @@ def main(opt, unique_device_id):
             decoders[tgt_lang] = decoder
 
         # Share the embedding matrix across all the encoders and decoders - preprocess with share_vocab required.
-        if model_opt.share_embeddings and firstTime:
-                tgt_embeddings.word_lut.weight = src_embeddings.word_lut.weight
-                weightToShare = src_embeddings.word_lut.weight
-        if model_opt.share_embeddings and (not firstTime):
-                tgt_embeddings.word_lut.weight = weightToShare
-                src_embeddings.word_lut.weight = weightToShare
-        firstTime = False
+        if model_opt.share_embeddings and first_time:
+            tgt_embeddings.word_lut.weight = src_embeddings.word_lut.weight
+            weight_to_share = src_embeddings.word_lut.weight
+        if model_opt.share_embeddings and (not first_time):
+            tgt_embeddings.word_lut.weight = weight_to_share
+            src_embeddings.word_lut.weight = weight_to_share
+        first_time = False
 
-        #TEST
-        #if src_lang in mapLang2Emb:
-        if src_lang in mapLang2Emb and model_opt.model_type == "text":
-                encoder.embeddings.word_lut.weight = mapLang2Emb.get(src_lang)
-        #TEST
-        #else:
+        if src_lang in map_lang2_emb and model_opt.model_type == "text":
+            encoder.embeddings.word_lut.weight = map_lang2_emb.get(src_lang)
         elif model_opt.model_type == "text":
-                mapLang2Emb[src_lang] = src_embeddings.word_lut.weight
-        if tgt_lang in mapLang2Emb:
-                decoder.embeddings.word_lut.weight = mapLang2Emb.get(tgt_lang)
+            map_lang2_emb[src_lang] = src_embeddings.word_lut.weight
+        if tgt_lang in map_lang2_emb:
+            decoder.embeddings.word_lut.weight = map_lang2_emb.get(tgt_lang)
         else:
-            mapLang2Emb[tgt_lang] = tgt_embeddings.word_lut.weight
+            map_lang2_emb[tgt_lang] = tgt_embeddings.word_lut.weight
 
-        #TEST
         if model_opt.model_type == "text":
             src_vocabs[src_lang] = fields['src'].base_field.vocab
         tgt_vocabs[tgt_lang] = fields['tgt'].base_field.vocab
 
-        generators[tgt_lang] = generator
+        if gpu_alloc_idx[index] == unique_device_id:
+            generators[tgt_lang] = generator
 
-        
-        # add this dataset iterator to the training iterators
-        train_iters[(src_lang, tgt_lang)] = build_dataset_iter_fct('train',
-                                                                fields,
-                                                                data_path,
-                                                                local_enc_dec_opts)
-        # add this dataset iterator to the validation iterators
-        valid_iters[(src_lang, tgt_lang)] = build_dataset_iter_fct('valid',
-                                                                fields,
-                                                                data_path,
-                                                                local_enc_dec_opts,
-                                                                is_train=False)
+        if gpu_alloc_idx[index] == unique_device_id:
+            # add this dataset iterator to the training iterators
+            train_iters[(src_lang, tgt_lang)] = build_dataset_iter_fct('train', fields, data_path, local_enc_dec_opts)
+            # add this dataset iterator to the validation iterators
+            valid_iters[(src_lang, tgt_lang)] = build_dataset_iter_fct(
+                'valid', fields, data_path, local_enc_dec_opts, is_train=False
+            )
 
         Fields_dict[src_tgt_lang] = fields
 
@@ -224,30 +219,27 @@ def main(opt, unique_device_id):
         encoder_list.append(src_lang)
         decoder_list.append(tgt_lang)
 
-
-
     encoder_splits = np.split(np.array(encoder_list), opt.world_size)
     decoder_splits = np.split(np.array(decoder_list), opt.world_size)
 
-    all_enc_comms = []
+    all_enc_comms = OrderedDict()
     for l in sorted(set(encoder_list)):
         indices = [i for i, x in enumerate(encoder_splits) if l in x]
         if len(indices) > 1:
             if is_master(opt, unique_device_id):
                 logger.info('Enc comm group {} {}'.format(l, indices))
-            all_enc_comms.append(torch.distributed.new_group(indices))
+            all_enc_comms[l] = torch.distributed.new_group(indices)
 
-    all_dec_comms = []
+    all_dec_comms = OrderedDict()
     for l in sorted(set(decoder_list)):
         indices = [i for i, x in enumerate(decoder_splits) if l in x]
-        if len(indices) > 1: #maybe needs to add not in logic to remove duplicate comms
+        if len(indices) > 1:  # maybe needs to add not in logic to remove duplicate comms
             if is_master(opt, unique_device_id):
                 logger.info('Dec comm group {} {}'.format(l, indices))
-            all_dec_comms.append(torch.distributed.new_group(indices))
+            all_dec_comms[l] = torch.distributed.new_group(indices)
 
     # Build model.
-    model = build_model(model_opt, opt, fields, encoders, decoders,
-            generators, src_vocabs, tgt_vocabs, checkpoint)
+    model = build_model(model_opt, opt, fields, encoders, decoders, generators, src_vocabs, tgt_vocabs, checkpoint)
 
     n_params, enc, dec = _tally_parameters(model)
     logger.info(f'total encoder parameters: {enc}')
@@ -257,8 +249,8 @@ def main(opt, unique_device_id):
         logger.info(f'[GPU ranks {unique_device_id},{device_id}] Enc [{v}]= name: {k}, params: {n_current}')
     # logger.info(f'total decoder parameters: {dec}')
     # logger.info(f'total encodes: {len(model.decoders)}')
-    for k,v in  model.decoder_ids.items():
-        n_current, _, _  = _tally_parameters(model.decoders[v])
+    for k, v in model.decoder_ids.items():
+        n_current, _, _ = _tally_parameters(model.decoders[v])
         logger.info(f'[GPU ranks {unique_device_id},{device_id}] Dec [{v}]= name: {k}, params: {n_current}')
     # logger.info('* number of parameters: %d' % n_params)
     _check_save_model_path(opt)
@@ -270,7 +262,7 @@ def main(opt, unique_device_id):
     model_saver = build_model_saver(model_opt, opt, model, Fields_dict, optim, unique_device_id)
 
     trainer = build_trainer(
-        opt, unique_device_id, all_enc_comms, all_dec_comms, model, fields, optim, generators, tgt_vocabs,
+        opt, unique_device_id, gpu_alloc_idx, all_enc_comms, all_dec_comms, model, fields, optim, generators, tgt_vocabs,
         model_saver=model_saver)
 
     # TODO: not implemented yet

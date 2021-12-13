@@ -58,7 +58,7 @@ def all_reduce_and_rescale_tensors(tensors, rescale_denom,
         if group:
             torch.distributed.all_reduce(buffer_t[:offset], group=group)
         else:
-            torch.distributed.all_reduce(buffer_t[:offset]) #no idea why doesn't like group=None
+            torch.distributed.all_reduce(buffer_t[:offset])  # no idea why doesn't like group=None
         buffer_t.div_(rescale_denom)
 
         # copy all-reduced buffer back into tensors
@@ -73,7 +73,10 @@ def all_reduce_and_rescale_tensors(tensors, rescale_denom,
         sz = t.numel() * t.element_size()
         if sz > buffer_size:
             # tensor is bigger than buffer, all-reduce and rescale directly
-            torch.distributed.all_reduce(t)
+            if group:
+                torch.distributed.all_reduce(t, group=group)
+            else:
+                torch.distributed.all_reduce(t)  # no idea why doesn't like group=None
             t.div_(rescale_denom)
         elif filled + sz > buffer_size:
             # buffer is full, all-reduce and replace buffer with grad
