@@ -1,24 +1,19 @@
 import os
+from collections import deque
+from copy import deepcopy
+
 import torch
 import torch.nn as nn
-
-from collections import deque
 
 from onmt.utils.distributed import is_master
 from onmt.utils.logging import logger
 from onmt.utils.module_splitter import explode_model
 
-from copy import deepcopy
-
 
 def build_model_saver(model_opt, opt, model, fields, optim, output_id):
-    model_saver = ModelSaver(opt.save_model,
-                             model,
-                             model_opt,
-                             fields,
-                             optim,
-                             opt.keep_checkpoint,
-                             output_id)
+    model_saver = ModelSaver(
+        opt.save_model, model, model_opt, fields, optim, opt.keep_checkpoint, output_id
+    )
     return model_saver
 
 
@@ -30,8 +25,16 @@ class ModelSaverBase(object):
     * `_rm_checkpoint
     """
 
-    def __init__(self, base_path, model, model_opt, fields, optim,
-                 keep_checkpoint=-1, output_id="0"):
+    def __init__(
+        self,
+        base_path,
+        model,
+        model_opt,
+        fields,
+        optim,
+        keep_checkpoint=-1,
+        output_id="0",
+    ):
         self.base_path = base_path
         self.model = model
         self.model_opt = model_opt
@@ -102,50 +105,56 @@ class ModelSaver(ModelSaverBase):
     """Simple model saver to filesystem"""
 
     def _save(self, step, model, output_id):
-        real_model = (model.module
-                      if isinstance(model, nn.DataParallel)
-                      else model)
-        #real_generator = (real_model.generator.module
+        real_model = model.module if isinstance(model, nn.DataParallel) else model
+        # real_generator = (real_model.generator.module
         #                  if isinstance(real_model.generator, nn.DataParallel)
         #                  else real_model.generator)
         model_state_dict = real_model.state_dict()
 
         checkpoint = {
-            'model': model_state_dict,
+            "model": model_state_dict,
             # 'generator': generator_state_dict,
-            'vocab': self.fields,
-            'opt': self.model_opt,
-            'optim': self.optim.state_dict(),
-            'whole_model': self.model
+            "vocab": self.fields,
+            "opt": self.model_opt,
+            "optim": self.optim.state_dict(),
+            "whole_model": self.model,
         }
 
         checkpoint_paths = []
 
         if is_master(output_id):
             logger.info("Saving full checkpoint %s_step_%d.pt" % (self.base_path, step))
-            checkpoint_path = '%s_step_%d.pt' % (self.base_path, step)
+            checkpoint_path = "%s_step_%d.pt" % (self.base_path, step)
             torch.save(checkpoint, checkpoint_path)
             checkpoint_paths.append(checkpoint_path)
 
-        encoders, decoders, attention_bridge, generators, model_frame = explode_model(checkpoint)
+        encoders, decoders, attention_bridge, generators, model_frame = explode_model(
+            checkpoint
+        )
 
         # TODO: refactor (in a dedicated saver class?)
         # TODO: file names should contain languages instead of device id and enc/dec number, and do not store duplicates
         # encoder modules
         for i, encoder in enumerate(encoders):
-            checkpoint_path = "{}_device_{}_step_{}_encoder_{}.pt".format(self.base_path, output_id, step, i)
+            checkpoint_path = "{}_device_{}_step_{}_encoder_{}.pt".format(
+                self.base_path, output_id, step, i
+            )
             logger.info("Saving encoder checkpoint {}".format(checkpoint_path))
             torch.save(encoder, checkpoint_path)
             checkpoint_paths.append(checkpoint_path)
         # decoder modules
         for i, decoder in enumerate(decoders):
-            checkpoint_path = "{}_device_{}_step_{}_decoder_{}.pt".format(self.base_path, output_id, step, i)
+            checkpoint_path = "{}_device_{}_step_{}_decoder_{}.pt".format(
+                self.base_path, output_id, step, i
+            )
             logger.info("Saving decoder checkpoint {}".format(checkpoint_path))
             torch.save(decoder, checkpoint_path)
             checkpoint_paths.append(checkpoint_path)
         # generator modules
         for i, generator in enumerate(generators):
-            checkpoint_path = "{}_device_{}_step_{}_generator_{}.pt".format(self.base_path, output_id, step, i)
+            checkpoint_path = "{}_device_{}_step_{}_generator_{}.pt".format(
+                self.base_path, output_id, step, i
+            )
             logger.info("Saving generator checkpoint {}".format(checkpoint_path))
             torch.save(generator, checkpoint_path)
             checkpoint_paths.append(checkpoint_path)
