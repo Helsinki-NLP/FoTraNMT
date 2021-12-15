@@ -6,6 +6,7 @@ from collections import deque
 
 from onmt.utils.distributed import is_master
 from onmt.utils.logging import logger
+from onmt.utils.module_splitter import explode_model
 
 from copy import deepcopy
 
@@ -107,49 +108,62 @@ class ModelSaver(ModelSaverBase):
         #real_generator = (real_model.generator.module
         #                  if isinstance(real_model.generator, nn.DataParallel)
         #                  else real_model.generator)
+        model_state_dict = real_model.state_dict()
+
+        checkpoint = {
+            'model': model_state_dict,
+            # 'generator': generator_state_dict,
+            'vocab': self.fields,
+            'opt': self.model_opt,
+            'optim': self.optim.state_dict(),
+            'whole_model': self.model
+        }
+
         checkpoint_paths = []
 
+        if is_master(output_id):
+            logger.info("Saving full checkpoint %s_step_%d.pt" % (self.base_path, step))
+            checkpoint_path = '%s_step_%d.pt' % (self.base_path, step)
+            torch.save(checkpoint, checkpoint_path)
+            checkpoint_paths.append(checkpoint_path)
+
+        encoders, decoders, attention_bridge, generators, model_frame = explode_model(checkpoint)
+
+        # TODO: refactor (in a dedicated saver class?)
         # TODO: file names should contain languages instead of device id and enc/dec number, and do not store duplicates
-        for i, encoder in enumerate(self.model.encoders):
-            enc_chkpt = {
-                'encoder_{}'.format(i): encoder
-            }
-            enc_chkpt_path = "{}_device{}_encoder{}_step{}.pt".format(self.base_path, output_id, i,  step)
-            logger.info("Saving encoder {}".format(enc_chkpt_path))
-            torch.save(enc_chkpt, enc_chkpt_path)
-            checkpoint_paths.append(enc_chkpt_path)
-
-        for i, decoder in enumerate(self.model.decoders):
-            dec_chkpt = {
-                'decoder_{}'.format(i): decoder
-            }
-            dec_chkpt_path = "{}_device{}_decoder{}_step{}.pt".format(self.base_path, output_id, i, step)
-            logger.info("Saving decoder {}".format(dec_chkpt_path))
-
-            torch.save(dec_chkpt, dec_chkpt_path)
-            checkpoint_paths.append(dec_chkpt_path)
+        # encoder modules
+        for i, encoder in enumerate(encoders):
+            checkpoint_path = "{}_device_{}_step_{}_encoder_{}.pt".format(self.base_path, output_id, step, i)
+            logger.info("Saving encoder checkpoint {}".format(checkpoint_path))
+            torch.save(encoder, checkpoint_path)
+            checkpoint_paths.append(checkpoint_path)
+        # decoder modules
+        for i, decoder in enumerate(decoders):
+            checkpoint_path = "{}_device_{}_step_{}_decoder_{}.pt".format(self.base_path, output_id, step, i)
+            logger.info("Saving decoder checkpoint {}".format(checkpoint_path))
+            torch.save(decoder, checkpoint_path)
+            checkpoint_paths.append(checkpoint_path)
+        # generator modules
+        for i, generator in enumerate(generators):
+            checkpoint_path = "{}_device_{}_step_{}_generator_{}.pt".format(self.base_path, output_id, step, i)
+            logger.info("Saving generator checkpoint {}".format(checkpoint_path))
+            torch.save(generator, checkpoint_path)
+            checkpoint_paths.append(checkpoint_path)
 
         if is_master(output_id):
             # TODO: not sure how to deal with model_state_dict, fields, model_opt and optim.state_dict() in a multi-gpu
             #  setting. Is it OK to save only from master?
-            model_state_dict = real_model.state_dict()
-            # model_state_dict = {k: v for k, v in model_state_dict.items()
-            #                    if 'generator' not in k}
-            # generator_state_dict = real_generator.state_dict()
-            att_chkpt = {
-                'model': model_state_dict,
-                # 'generator': generator_state_dict,
-                'vocab': self.fields,
-                'opt': self.model_opt,
-                'optim': self.optim.state_dict(),
-                'attention_bridge': self.model.attention_bridge
-            }
+            # attention bridge module
+            checkpoint_path = "{}_step_{}_bridge.pt".format(self.base_path, step)
+            logger.info("Saving attention bridge checkpoint {}".format(checkpoint_path))
+            torch.save(attention_bridge, checkpoint_path)
+            checkpoint_paths.append(checkpoint_path)
 
-            att_chkpt_path = "{}_bridge_step{}.pt".format(self.base_path, step)
-
-            logger.info("MASTER: Saving attention_bridge {}".format(att_chkpt_path))
-            torch.save(att_chkpt, att_chkpt_path)
-            checkpoint_paths.append(att_chkpt_path)
+            # model frame
+            checkpoint_path = "{}_step_{}_frame.pt".format(self.base_path, step)
+            logger.info("Saving model frame checkpoint {}".format(checkpoint_path))
+            torch.save(model_frame, checkpoint_path)
+            checkpoint_paths.append(checkpoint_path)
 
         return checkpoint_paths
 
