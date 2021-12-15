@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 """Train models."""
+import glob
 import os
 import signal
+
 import torch
 
 import onmt.opts as opts
 import onmt.utils.distributed
-
-from onmt.utils.logging import logger
 from onmt.train_single import main as single_main
+from onmt.utils.logging import logger
 from onmt.utils.parse import ArgumentParser
+import shutil
 
 
 def main(opt):
@@ -35,6 +37,11 @@ def main(opt):
         else:
             out = env_node_list.split(",")
         return [node_n.replace("]", "") for node_n in out]
+
+    # clean output directory
+    for filename in glob.glob("{}*".format(opt.save_model)):
+        os.remove(filename)
+        # os.rename(filename, "{}.bk".format(filename))
 
     node_rank = 0
     if nb_gpu != int(opt.world_size):
