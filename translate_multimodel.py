@@ -1,8 +1,6 @@
 import argparse
+
 import onmt
-
-from ipdb import launch_ipdb_on_exception
-
 import translate
 
 if __name__ == "__main__":
@@ -17,5 +15,4 @@ if __name__ == "__main__":
 
     opt = parser.parse_args()
     logger = translate.init_logger(opt.log_file)
-    with launch_ipdb_on_exception():
-        translate.main(opt)
+    translate.main(opt)
