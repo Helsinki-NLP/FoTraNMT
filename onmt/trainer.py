@@ -334,6 +334,44 @@ class Trainer(object):
                 "Start training loop and validate every %d steps...", valid_steps
             )
 
+        logger.info("Syncing parameters with other devices")
+        # encoders
+        for group_lang, group in self.all_enc_comms.items():
+            params = [
+                p[1].data
+                for p in self.model.named_parameters()
+                if p[0].startswith(
+                    "encoders.{}".format(self.model.encoder_ids[group_lang])
+                )
+            ]
+            if params:
+                onmt.utils.distributed.all_reduce_and_rescale_tensors(
+                    params, float(1), group=group
+                )
+        # decoders
+        for group_lang, group in self.all_dec_comms.items():
+            params = [
+                p[1].data
+                for p in self.model.named_parameters()
+                if (
+                    p[0].startswith(
+                        "decoders.{}".format(self.model.decoder_ids[group_lang])
+                    )
+                    or p[0].startswith(
+                        "generators.{}".format(self.model.decoder_ids[group_lang])
+                    )
+                )
+            ]
+            if params:
+                onmt.utils.distributed.all_reduce_and_rescale_tensors(
+                    params, float(1), group=group
+                )
+        # Reduce all attention grads across the 'world'
+        params = [
+            p[1].data for p in self.model.named_parameters() if "attention" in p[0]
+        ]
+        onmt.utils.distributed.all_reduce_and_rescale_tensors(params, float(1))
+
         total_stats = onmt.utils.Statistics()
         report_stats = onmt.utils.Statistics()
         self._start_report_manager(start_time=total_stats.start_time)
@@ -421,6 +459,8 @@ class Trainer(object):
                     report_stats,
                     self.activate_extra_loss,
                 )
+
+                # logger.info("XXXXXXXX {}".format([p for n, p in self.model.named_parameters() if n == "decoders.0.transformer_layers.0.self_attn.linear_keys.weight"]))
 
                 if self.average_decay > 0 and i % self.average_every == 0:
                     self._update_average(step)

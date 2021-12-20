@@ -88,7 +88,6 @@ def explode_model(full_ab_model):
                     "encoder_grps",  # TODO: remove if not used in build_bilingual_model (but can be used for a multilingual model)
                     {lang: full_ab_model["whole_model"].encoder_grps[lang]},
                 ),
-                ("tgt_vocabs", {lang: full_ab_model["whole_model"].tgt_vocabs[lang]}),
                 (
                     "_modules",
                     OrderedDict(
@@ -117,6 +116,8 @@ def explode_model(full_ab_model):
                 ),
             ]
         )
+        if lang in full_ab_model["whole_model"].tgt_vocabs.keys():
+            enc_model["whole_model"]["tgt_vocabs"] = {lang: full_ab_model["whole_model"].tgt_vocabs[lang]}
         enc_model["model"] = _extract_matching_keys(
             full_ab_model["model"],
             "encoders.{}.".format(i),
