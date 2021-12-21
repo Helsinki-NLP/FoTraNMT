@@ -14,7 +14,7 @@ from onmt.model_builder import (
 )
 from onmt.models import build_model_saver
 from onmt.trainer import build_trainer
-from onmt.utils.distributed import is_master
+from onmt.utils.distributed import is_master, CommunicationGroup
 from onmt.utils.logging import init_logger, logger
 from onmt.utils.misc import set_random_seed
 from onmt.utils.optimizers import Optimizer
@@ -255,7 +255,10 @@ def main(opt, unique_device_id):
         if len(indices) > 1:
             if is_master(unique_device_id):
                 logger.info("Enc comm group {} {}".format(l, indices))
-            all_enc_comms[l] = torch.distributed.new_group(indices)
+            all_enc_comms[l] = CommunicationGroup(
+                torch_dist_group=torch.distributed.new_group(indices),
+                group_size=len(indices),
+            )
 
     all_dec_comms = OrderedDict()
     for l in sorted(set(decoder_list)):
@@ -265,7 +268,10 @@ def main(opt, unique_device_id):
         ):  # maybe needs to add not in logic to remove duplicate comms
             if is_master(unique_device_id):
                 logger.info("Dec comm group {} {}".format(l, indices))
-            all_dec_comms[l] = torch.distributed.new_group(indices)
+            all_dec_comms[l] = CommunicationGroup(
+                torch_dist_group=torch.distributed.new_group(indices),
+                group_size=len(indices),
+            )
 
     # Build model.
     model = build_model(

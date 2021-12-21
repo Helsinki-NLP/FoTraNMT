@@ -135,3 +135,13 @@ def all_gather_list(data, max_size=4096):
         result = pickle.loads(bytes_list)
         results.append(result)
     return results
+
+
+class CommunicationGroup:
+    def __init__(
+        self,
+        torch_dist_group: torch.distributed.distributed_c10d.ProcessGroupNCCL,
+        group_size: int,
+    ):
+        self.torch_dist_group = torch_dist_group
+        self.size = group_size

@@ -11,6 +11,7 @@
 
 import itertools
 import traceback
+import typing
 from collections import OrderedDict
 from copy import deepcopy
 
@@ -19,6 +20,7 @@ import torch
 from torch.autograd import Variable
 
 import onmt.utils
+from onmt.utils.distributed import CommunicationGroup
 from onmt.utils.logging import logger
 from onmt.utils.loss import build_loss_from_generator_and_vocab
 
@@ -27,8 +29,8 @@ def build_trainer(
     opt,
     device_id,
     gpu_allocation_indices,
-    all_enc_comms: OrderedDict,
-    all_dec_comms: OrderedDict,
+    all_enc_comms: typing.OrderedDict[str, CommunicationGroup],
+    all_dec_comms: typing.OrderedDict[str, CommunicationGroup],
     model,
     fields,
     optim,
@@ -196,8 +198,8 @@ class Trainer(object):
         accum_steps=[0],
         n_gpu=1,
         gpu_rank=1,
-        all_enc_comms: OrderedDict = None,
-        all_dec_comms: OrderedDict = None,
+        all_enc_comms: typing.OrderedDict[str, CommunicationGroup] = None,
+        all_dec_comms: typing.OrderedDict[str, CommunicationGroup] = None,
         gpu_verbose_level=0,
         report_manager=None,
         model_saver=None,
@@ -334,43 +336,49 @@ class Trainer(object):
                 "Start training loop and validate every %d steps...", valid_steps
             )
 
-        logger.info("Syncing parameters with other devices")
+        logger.info("Syncing shared parameters with other devices")
+        device_src_langs = [pair[0] for pair in train_iter_fcts.keys()]
+        device_tgt_langs = [pair[1] for pair in train_iter_fcts.keys()]
         # encoders
         for group_lang, group in self.all_enc_comms.items():
-            params = [
-                p[1].data
-                for p in self.model.named_parameters()
-                if p[0].startswith(
-                    "encoders.{}".format(self.model.encoder_ids[group_lang])
-                )
-            ]
-            if params:
+            if (
+                group_lang in device_src_langs
+            ):  # check if the lang is in the encoder list of the device
+                params = [
+                    p[1].data
+                    for p in self.model.named_parameters()
+                    if p[0].startswith(
+                        "encoders.{}".format(self.model.encoder_ids[group_lang])
+                    )
+                ]
                 onmt.utils.distributed.all_reduce_and_rescale_tensors(
-                    params, float(1), group=group
+                    params, float(group.size), group=group.torch_dist_group
                 )
         # decoders
         for group_lang, group in self.all_dec_comms.items():
-            params = [
-                p[1].data
-                for p in self.model.named_parameters()
-                if (
-                    p[0].startswith(
-                        "decoders.{}".format(self.model.decoder_ids[group_lang])
+            if (
+                group_lang in device_tgt_langs
+            ):  # check if the lang is in the decoder list of the device
+                params = [
+                    p[1].data
+                    for p in self.model.named_parameters()
+                    if (
+                        p[0].startswith(
+                            "decoders.{}".format(self.model.decoder_ids[group_lang])
+                        )
+                        or p[0].startswith(
+                            "generators.{}".format(self.model.decoder_ids[group_lang])
+                        )
                     )
-                    or p[0].startswith(
-                        "generators.{}".format(self.model.decoder_ids[group_lang])
-                    )
-                )
-            ]
-            if params:
+                ]
                 onmt.utils.distributed.all_reduce_and_rescale_tensors(
-                    params, float(1), group=group
+                    params, float(group.size), group=group.torch_dist_group
                 )
-        # Reduce all attention grads across the 'world'
+        # average all attention params across the 'world'
         params = [
             p[1].data for p in self.model.named_parameters() if "attention" in p[0]
         ]
-        onmt.utils.distributed.all_reduce_and_rescale_tensors(params, float(1))
+        onmt.utils.distributed.all_reduce_and_rescale_tensors(params, float(self.n_gpu))
 
         total_stats = onmt.utils.Statistics()
         report_stats = onmt.utils.Statistics()
@@ -415,12 +423,8 @@ class Trainer(object):
         )
 
         while True:
-            src_langs = []
-            tgt_langs = []
             train_iter_lang_pairs = []
             for lang_pair in langpairweights[0]:
-                src_langs.append(lang_pair[0])
-                tgt_langs.append(lang_pair[1])
                 train_iter_lang_pairs.append(train_iters[lang_pair])
 
             for i, batches_norms in enumerate(zip(*train_iter_lang_pairs)):
@@ -454,8 +458,8 @@ class Trainer(object):
                     batches,
                     normalizations,
                     total_stats,
-                    src_langs,
-                    tgt_langs,
+                    device_src_langs,
+                    device_tgt_langs,
                     report_stats,
                     self.activate_extra_loss,
                 )
@@ -507,6 +511,48 @@ class Trainer(object):
                     #    # If the patience has reached the limit, stop training
                     #    if self.earlystopper.has_stopped():
                     #        break
+                # sync_steps = 100
+                # # if self.model_sync is not None and (
+                # if (
+                #         sync_steps != 0 and step % sync_steps == 0
+                # ):
+                #     logger.info("Syncing parameters with other devices")
+                #     # encoders
+                #     for group_lang, group in self.all_enc_comms.items():
+                #         params = [
+                #             p[1].data
+                #             for p in self.model.named_parameters()
+                #             if p[0].startswith(
+                #                 "encoders.{}".format(self.model.encoder_ids[group_lang])
+                #             )
+                #         ]
+                #         if params:
+                #             onmt.utils.distributed.all_reduce_and_rescale_tensors(
+                #                 params, float(1), group=group
+                #             )
+                #     # decoders
+                #     for group_lang, group in self.all_dec_comms.items():
+                #         params = [
+                #             p[1].data
+                #             for p in self.model.named_parameters()
+                #             if (
+                #                     p[0].startswith(
+                #                         "decoders.{}".format(self.model.decoder_ids[group_lang])
+                #                     )
+                #                     or p[0].startswith(
+                #                 "generators.{}".format(self.model.decoder_ids[group_lang])
+                #             )
+                #             )
+                #         ]
+                #         if params:
+                #             onmt.utils.distributed.all_reduce_and_rescale_tensors(
+                #                 params, float(1), group=group
+                #             )
+                #     # Reduce all attention grads across the 'world'
+                #     params = [
+                #         p[1].data for p in self.model.named_parameters() if "attention" in p[0]
+                #     ]
+                #     onmt.utils.distributed.all_reduce_and_rescale_tensors(params, float(1))
 
                 if self.model_saver is not None and (
                     save_checkpoint_steps != 0 and step % save_checkpoint_steps == 0
@@ -673,7 +719,7 @@ class Trainer(object):
                         # logger.info("GPU {} - Enc: group_lang = {}, len(grads) = {}".format(self.gpu_rank, group_lang, len(grads)))
                         # logger.info("GPU {} BEFORE - Enc: group_lang = {}, grads = {}".format(self.gpu_rank, group_lang, grads[2][:10]))
                         onmt.utils.distributed.all_reduce_and_rescale_tensors(
-                            grads, float(1), group=group
+                            grads, float(1), group=group.torch_dist_group
                         )
                         # logger.info("GPU {} AFTER - Enc: group_lang = {}, grads = {}".format(self.gpu_rank, group_lang, grads[2][:10]))
                     # torch.cuda.synchronize()
@@ -706,7 +752,7 @@ class Trainer(object):
                         # logger.info("GPU {} - Dec: group_lang = {}, len(grads) = {}".format(self.gpu_rank, group_lang, len(grads)))
                         # logger.info("GPU {} BEFORE - Dec: group_lang = {}, grads = {}".format(self.gpu_rank, group_lang, grads[2][:10]))
                         onmt.utils.distributed.all_reduce_and_rescale_tensors(
-                            grads, float(1), group=group
+                            grads, float(1), group=group.torch_dist_group
                         )
                         # logger.info("GPU {} AFTER - Dec: group_lang = {}, grads = {}".format(self.gpu_rank, group_lang, grads[2][:10]))
 
