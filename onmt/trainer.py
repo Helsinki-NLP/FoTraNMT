@@ -190,7 +190,7 @@ class Trainer(object):
         model,
         train_losses,
         valid_losses,
-        optim,
+        optim: OrderedDict,
         trunc_size=0,
         shard_size=32,
         norm_method="sents",
@@ -241,6 +241,7 @@ class Trainer(object):
         self.activate_extra_loss = activate_extra_loss
         self.attention_heads = attention_heads
         self.batches_info = batches_info
+        self.global_training_step = 1
 
         for i in range(len(self.accum_count_l)):
             assert self.accum_count_l[i] > 0
@@ -271,7 +272,7 @@ class Trainer(object):
     def _accum_batches(self, iterator, tgt_lang):
         batches = []
         normalization = 0
-        self.accum_count = self._accum_count(self.optim.training_step)
+        self.accum_count = self._accum_count(self.global_training_step)
         for batch in iterator:
             batches.append(batch)
             if self.norm_method == "tokens":
@@ -285,7 +286,7 @@ class Trainer(object):
                 normalization += batch.batch_size
             if len(batches) == self.accum_count:
                 yield batches, normalization
-                self.accum_count = self._accum_count(self.optim.training_step)
+                self.accum_count = self._accum_count(self.global_training_step)
                 batches = []
                 normalization = 0
         if batches:
@@ -434,7 +435,7 @@ class Trainer(object):
                     batches.append(batch_norm_lang_pair[0])
                     normalizations.append(batch_norm_lang_pair[1])
 
-                step = self.optim.training_step
+                step = self.global_training_step
                 # UPDATE DROPOUT
                 self._maybe_update_dropout(step)
 
@@ -464,8 +465,6 @@ class Trainer(object):
                     self.activate_extra_loss,
                 )
 
-                # logger.info("XXXXXXXX {}".format([p for n, p in self.model.named_parameters() if n == "decoders.0.transformer_layers.0.self_attn.linear_keys.weight"]))
-
                 if self.average_decay > 0 and i % self.average_every == 0:
                     self._update_average(step)
 
@@ -473,7 +472,7 @@ class Trainer(object):
                 report_stats = self._maybe_report_training(
                     step,
                     train_steps,
-                    self.optim.learning_rate(),
+                    self.optim["att"].learning_rate(),
                     report_stats,
                     ("GPU", str(self.gpu_rank)),
                 )
@@ -499,7 +498,7 @@ class Trainer(object):
                                 % (self.gpu_rank, step)
                             )
                         self._report_step(
-                            self.optim.learning_rate(),
+                            self.optim["att"].learning_rate(),
                             step,
                             valid_stats=valid_stats,
                             device_id=self.gpu_rank,
@@ -511,48 +510,6 @@ class Trainer(object):
                     #    # If the patience has reached the limit, stop training
                     #    if self.earlystopper.has_stopped():
                     #        break
-                # sync_steps = 100
-                # # if self.model_sync is not None and (
-                # if (
-                #         sync_steps != 0 and step % sync_steps == 0
-                # ):
-                #     logger.info("Syncing parameters with other devices")
-                #     # encoders
-                #     for group_lang, group in self.all_enc_comms.items():
-                #         params = [
-                #             p[1].data
-                #             for p in self.model.named_parameters()
-                #             if p[0].startswith(
-                #                 "encoders.{}".format(self.model.encoder_ids[group_lang])
-                #             )
-                #         ]
-                #         if params:
-                #             onmt.utils.distributed.all_reduce_and_rescale_tensors(
-                #                 params, float(1), group=group
-                #             )
-                #     # decoders
-                #     for group_lang, group in self.all_dec_comms.items():
-                #         params = [
-                #             p[1].data
-                #             for p in self.model.named_parameters()
-                #             if (
-                #                     p[0].startswith(
-                #                         "decoders.{}".format(self.model.decoder_ids[group_lang])
-                #                     )
-                #                     or p[0].startswith(
-                #                 "generators.{}".format(self.model.decoder_ids[group_lang])
-                #             )
-                #             )
-                #         ]
-                #         if params:
-                #             onmt.utils.distributed.all_reduce_and_rescale_tensors(
-                #                 params, float(1), group=group
-                #             )
-                #     # Reduce all attention grads across the 'world'
-                #     params = [
-                #         p[1].data for p in self.model.named_parameters() if "attention" in p[0]
-                #     ]
-                #     onmt.utils.distributed.all_reduce_and_rescale_tensors(params, float(1))
 
                 if self.model_saver is not None and (
                     save_checkpoint_steps != 0 and step % save_checkpoint_steps == 0
@@ -622,10 +579,7 @@ class Trainer(object):
         report_stats,
         activate_extra_loss,
     ):
-        if self.accum_count > 1:
-            self.optim.zero_grad()
 
-        self.optim.zero_grad()
         for (true_batches, normalization, src_lang, tgt_lang) in zip(
             true_batches_langs, normalizations, src_langs, tgt_langs
         ):
@@ -685,7 +639,10 @@ class Trainer(object):
                         )
 
                         if loss is not None:
-                            self.optim.backward(loss)
+                            self.optim["enc"][src_lang].backward(loss)
+                            self.optim["dec"][tgt_lang].backward(loss)
+                            self.optim["gen"][tgt_lang].backward(loss)
+                            self.optim["att"].backward(loss)
 
                         total_stats.update(batch_stats)
                         report_stats.update(batch_stats)
@@ -694,7 +651,7 @@ class Trainer(object):
                         traceback.print_exc()
                         logger.info(
                             "At step %d, we removed a batch - accum %d",
-                            self.optim.training_step,
+                            self.global_training_step,
                             k,
                         )
 
@@ -716,7 +673,6 @@ class Trainer(object):
                             )
                             and p[1].grad is not None
                         ]
-                        # logger.info("GPU {} - Enc: group_lang = {}, len(grads) = {}".format(self.gpu_rank, group_lang, len(grads)))
                         # logger.info("GPU {} BEFORE - Enc: group_lang = {}, grads = {}".format(self.gpu_rank, group_lang, grads[2][:10]))
                         onmt.utils.distributed.all_reduce_and_rescale_tensors(
                             grads, float(1), group=group.torch_dist_group
@@ -749,7 +705,6 @@ class Trainer(object):
                             )
                             and p[1].grad is not None
                         ]
-                        # logger.info("GPU {} - Dec: group_lang = {}, len(grads) = {}".format(self.gpu_rank, group_lang, len(grads)))
                         # logger.info("GPU {} BEFORE - Dec: group_lang = {}, grads = {}".format(self.gpu_rank, group_lang, grads[2][:10]))
                         onmt.utils.distributed.all_reduce_and_rescale_tensors(
                             grads, float(1), group=group.torch_dist_group
@@ -766,22 +721,36 @@ class Trainer(object):
                 ]
                 onmt.utils.distributed.all_reduce_and_rescale_tensors(grads, float(1))
 
-            self.optim.step()
+            for src_lang in set(src_langs):
+                optim_enc = self.optim["enc"][src_lang]
+                optim_enc.step()
+                optim_enc.zero_grad()
+            for tgt_lang in set(tgt_langs):
+                optim_dec = self.optim["dec"][tgt_lang]
+                optim_dec.step()
+                optim_dec.zero_grad()
+                optim_gen = self.optim["gen"][tgt_lang]
+                optim_gen.step()
+                optim_gen.zero_grad()
+            optim_att = self.optim["att"]
+            optim_att.step()
+            optim_att.zero_grad()
+            self.global_training_step += 1
 
-            # TODO: ???
-            # # If truncated, don't backprop fully.
-            # # TO CHECK
-            # # if dec_state is not None:
-            # #    dec_state.detach()
-            # """
-            # if self.model.decoder.state is not None:
-            #     self.model.decoder.detach_state()
-            # """
-            # decoder_id = self.model.decoder_ids[tgt_lang]
+            # If truncated, don't backprop fully.
+            # TO CHECK
+            # if dec_state is not None:
+            #    dec_state.detach()
+            """
+            if self.model.decoder.state is not None:
+                self.model.decoder.detach_state()
+            """
+            for decoder in self.model.decoders:
+                if decoder.state is not None:
+                    decoder.detach_state()
             # if self.model.decoders[decoder_id].state is not None:
             #     self.model.decoders[decoder_id].detach_state()
 
-        # TODO: ???
         # # in case of multi step gradient accumulation,
         # # update only after accum batches
         # if self.accum_count > 1:

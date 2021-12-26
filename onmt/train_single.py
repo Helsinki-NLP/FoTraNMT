@@ -214,16 +214,16 @@ def main(opt, unique_device_id):
             src_embeddings.word_lut.weight = weight_to_share
         first_time = False
 
-        if src_lang in map_lang2_emb and model_opt.model_type == "text":
+        if src_lang in map_lang2_emb and model_opt.model_type == "text":  # FIXME: shouldn't this be ["text"]?
             encoder.embeddings.word_lut.weight = map_lang2_emb.get(src_lang)
-        elif model_opt.model_type == "text":
+        elif model_opt.model_type == "text":  # FIXME: shouldn't this be ["text"]?
             map_lang2_emb[src_lang] = src_embeddings.word_lut.weight
         if tgt_lang in map_lang2_emb:
             decoder.embeddings.word_lut.weight = map_lang2_emb.get(tgt_lang)
         else:
             map_lang2_emb[tgt_lang] = tgt_embeddings.word_lut.weight
 
-        if model_opt.model_type == "text":
+        if model_opt.model_type == "text":  # FIXME: shouldn't this be ["text"]?
             src_vocabs[src_lang] = fields["src"].base_field.vocab
         tgt_vocabs[tgt_lang] = fields["tgt"].base_field.vocab
 
@@ -303,11 +303,29 @@ def main(opt, unique_device_id):
     _check_save_model_path(opt)
 
     # Build optimizer.
-    optimizer = Optimizer.from_opt(model, opt, checkpoint=checkpoint)
+    optimizers = OrderedDict([("enc", OrderedDict()), ("dec", OrderedDict()), ("gen", OrderedDict())])
+    for src_lang in encoders.keys():
+        model_enc = model.encoders[model.encoder_ids[src_lang]]
+        optim_enc = Optimizer.from_opt(model_enc, opt, checkpoint=checkpoint)
+        optim_enc.zero_grad()
+        optimizers["enc"][src_lang] = optim_enc
+    for tgt_lang in decoders.keys():
+        model_dec = model.decoders[model.decoder_ids[tgt_lang]]
+        optim_dec = Optimizer.from_opt(model_dec, opt, checkpoint=checkpoint)
+        optim_dec.zero_grad()
+        optimizers["dec"][tgt_lang] = optim_dec
+        model_gen = model.generators[model.decoder_ids[tgt_lang]]
+        optim_gen = Optimizer.from_opt(model_gen, opt, checkpoint=checkpoint)
+        optim_gen.zero_grad()
+        optimizers["gen"][tgt_lang] = optim_gen
+    model_att = model.attention_bridge
+    optim_att = Optimizer.from_opt(model_att, opt, checkpoint=checkpoint)
+    optim_att.zero_grad()
+    optimizers["att"] = optim_att
 
     # Build model saver
     model_saver = build_model_saver(
-        model_opt, opt, model, fields_dict, optimizer, unique_device_id
+        model_opt, opt, model, fields_dict, optimizers, unique_device_id
     )
 
     trainer = build_trainer(
@@ -318,7 +336,7 @@ def main(opt, unique_device_id):
         all_dec_comms,
         model,
         fields,
-        optimizer,
+        optimizers,
         generators,
         tgt_vocabs,
         model_saver=model_saver,

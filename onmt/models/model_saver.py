@@ -118,7 +118,13 @@ class ModelSaver(ModelSaverBase):
             # 'generator': generator_state_dict,
             "vocab": self.fields,
             "opt": self.model_opt,
-            "optim": self.optim.state_dict(),
+            # "optim": self.optim.state_dict(),
+            "optim": {
+                "enc": {lang: lang_optim.state_dict() for lang, lang_optim in self.optim["enc"].items()},
+                "dec": {lang: lang_optim.state_dict() for lang, lang_optim in self.optim["dec"].items()},
+                "gen": {lang: lang_optim.state_dict() for lang, lang_optim in self.optim["gen"].items()},
+                "att": self.optim["att"].state_dict()
+            },
             "whole_model": self.model,
         }
 
