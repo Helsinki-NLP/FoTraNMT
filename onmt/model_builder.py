@@ -89,9 +89,9 @@ def load_test_multitask_model(opt, model_path=None):
         model_path = model_path if model_path.endswith('_') else f'{model_path}_'
         enc_path = model_path + opt.src_lang + '_enc.pt'
         dec_path = model_path + opt.tgt_lang + '_dec.pt'
-        opt.generator   = model_path + opt.tgt_lang + '_gen.pt' if opt.generator is None
-        opt.bridge      = model_path + '_bridge.pt' if opt.bridge is None
-        opt.model_frame = model_path + '_frame.pt' if opt.model_fame is None
+        opt.generator   = model_path + opt.tgt_lang + '_gen.pt' if opt.generator is None else opt.generator
+        opt.bridge      = model_path + 'bridge.pt' if opt.bridge is None else opt.bridge
+        opt.model_frame = model_path + 'frame.pt' if opt.model_frame is None else opt.model_frame
         
 
         encoder = torch.load(enc_path, map_location=lambda storage, loc: storage)
