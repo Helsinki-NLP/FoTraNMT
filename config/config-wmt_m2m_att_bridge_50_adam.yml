@@ -52,10 +52,11 @@ save_model: /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/model
 save_checkpoint_steps: 25000
 keep_checkpoint: 10
 seed: 3435
-train_steps: 200000
+train_steps: 150000
 valid_steps: 1000000
 warmup_steps: 40000
 report_every: 100
+save_all_gpus: 'true'
 
 use_attention_bridge: 'true'
 n_layers_attbrg: 6
