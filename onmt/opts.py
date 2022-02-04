@@ -1355,7 +1355,10 @@ def translate_opts(parser):
         required=True,
         help="Path to model .pt file(s). "
         "Multiple models can be specified, "
-        "for ensemble decoding.",
+        "for ensemble decoding."
+        "For translate_multmodel.py please specify the path where the model components are located"
+        "using the prefix until the step number you want to load. Encoder, decoder will be loaded"
+        "with the src_lang and tgt_lang respectively. You can override the generator, the bridge and the model_frame.",
     )
     group.add(
         "--fp32",
@@ -1754,40 +1757,40 @@ def build_bilingual_model(parser):
         help="The 2-character target language code",
     )
     group = parser.add_argument_group("Model Modules")
-    group.add(
-        "--encoder",
-        "-encoder",
-        required=True,
-        help="Path to the encoder module .pt file",
-    )
-    group.add(
-        "--decoder",
-        "-decoder",
-        required=True,
-        help="Path to the decoder module .pt file",
-    )
+    #group.add(
+    #    "--encoder",
+    #    "-encoder",
+    #    required=False,
+    #    help="Path to the encoder module .pt file",
+    #)
+    #group.add(
+    #    "--decoder",
+    #    "-decoder",
+    #    required=False,
+    #    help="Path to the decoder module .pt file",
+    #)
     group.add(
         "--bridge",
         "-bridge",
-        required=True,
+        required=False,
         help="Path to the attention bridge module .pt file",
     )
     group.add(
         "--generator",
         "-generator",
-        required=True,
+        required=False,
         help="Path to the generator module .pt file",
     )
     group.add(
         "--model_frame",
         "-model_frame",
-        required=True,
+        required=False,
         help="Path to the model frame .pt file",
     )
     group.add(
-        "--output",
-        "-output",
-        required=True,
+        "--output_model",
+        "-output_model",
+        required=False,
         help="Path to the model output",
     )
 
