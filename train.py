@@ -40,7 +40,8 @@ def main(opt):
 
     # clean output directory
     for filename in glob.glob("{}*".format(opt.save_model)):
-        os.remove(filename)
+        if os.path.isfile(filename):
+            os.remove(filename)
         # os.rename(filename, "{}.bk".format(filename))
 
     node_rank = 0

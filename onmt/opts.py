@@ -731,6 +731,13 @@ def train_opts(parser):
     )
 
     group.add(
+        "--save_all_gpus",
+        "-save_all_gpus",
+        action="store_true",
+        help="Whether to store a model from every gpu (in addition to the modules)",
+    )
+
+    group.add(
         "--save_checkpoint_steps",
         "-save_checkpoint_steps",
         type=int,

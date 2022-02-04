@@ -12,7 +12,7 @@ from onmt.utils.module_splitter import explode_model
 
 def build_model_saver(model_opt, opt, model, fields, optim, device_id):
     model_saver = ModelSaver(
-        opt.save_model, model, model_opt, fields, optim, opt.keep_checkpoint, device_id
+        opt.save_model, model, model_opt, fields, optim, opt.keep_checkpoint, device_id, opt.save_all_gpus
     )
     return model_saver
 
@@ -34,6 +34,7 @@ class ModelSaverBase(object):
         optim,
         keep_checkpoint=-1,
         device_id="0",
+        all_gpus=False,
     ):
         self.base_path = base_path
         self.model = model
@@ -45,6 +46,7 @@ class ModelSaverBase(object):
         if keep_checkpoint > 0:
             self.checkpoint_queue = deque([], maxlen=keep_checkpoint)
         self.device_id = device_id
+        self.all_gpus = all_gpus
 
     def save(self, step, moving_average=None):
         """Main entry point for model saver
@@ -130,18 +132,18 @@ class ModelSaver(ModelSaverBase):
 
         tmp_checkpoint_paths = []
 
-        # if is_master(device_id):
-        #     logger.info("Saving full checkpoint %s_step_%d.pt" % (self.base_path, step))
-        #     checkpoint_path = "%s_step_%d.pt" % (self.base_path, step)
-        #     torch.save(checkpoint, checkpoint_path)
-        #     tmp_checkpoint_paths.append(checkpoint_path)
+        if self.all_gpus:
+            # save models trained in each gpu
+            checkpoint_path = "{}_step_{}_gpu_{}.pt".format(self.base_path, step, device_id)
+            logger.info("Saving full checkpoint {}".format(checkpoint_path))
+            torch.save(checkpoint, checkpoint_path)
+            tmp_checkpoint_paths.append(checkpoint_path)
 
         encoders, decoders, attention_bridge, generators, model_frame = explode_model(
             checkpoint
         )
 
         # TODO: refactor (in a dedicated saver class?)
-        # TODO: file names should contain languages instead of device id and enc/dec number, and do not store duplicates
         # encoder modules
         for i, encoder in enumerate(encoders):
             checkpoint_path = "{}_step_{}_{}_enc.pt".format(
