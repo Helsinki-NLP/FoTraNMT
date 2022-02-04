@@ -1757,18 +1757,21 @@ def build_bilingual_model(parser):
         help="The 2-character target language code",
     )
     group = parser.add_argument_group("Model Modules")
-    #group.add(
-    #    "--encoder",
-    #    "-encoder",
-    #    required=False,
-    #    help="Path to the encoder module .pt file",
-    #)
-    #group.add(
-    #    "--decoder",
-    #    "-decoder",
-    #    required=False,
-    #    help="Path to the decoder module .pt file",
-    #)
+    group.add(
+        "--encoder",
+        "-encoder",
+        required=False,
+        help="Path to the encoder module .pt file"
+        "NOT NEEDED IF --model gives a path+model_preffix",
+
+    )
+    group.add(
+        "--decoder",
+        "-decoder",
+        required=False,
+        help="Path to the decoder module .pt file"
+        "NOT NEEDED IF --model gives a path+model_preffix",
+    )
     group.add(
         "--bridge",
         "-bridge",
