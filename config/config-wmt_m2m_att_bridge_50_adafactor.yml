@@ -59,7 +59,7 @@ report_every: 100
 save_all_gpus: 'true'
 
 use_attention_bridge: 'true'
-n_layers_attbrg: 6
+n_layers_attbrg: 1
 layer_type_attbrg: fixed-size
 hidden_ab_size: 4096
 attention_heads: 50
@@ -76,7 +76,7 @@ model_type: text
 
 accum_count: 1
 optim: adafactor
-decay_method: noam
+decay_method: none
 learning_rate: 3
 max_grad_norm: 0.0
 
