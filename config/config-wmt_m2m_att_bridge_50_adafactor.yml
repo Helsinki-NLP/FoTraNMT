@@ -1,0 +1,99 @@
+data:
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.en-cs
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.cs-en
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.cs-cs
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.en-de
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.de-en
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.de-de
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.en-et
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.et-en
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.et-et
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.en-fi
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.fi-en
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.fi-fi
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.en-ru
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.ru-en
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.ru-ru
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.en-tr
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.tr-en
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.tr-tr
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.en-zh
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.zh-en
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.zh-zh
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.en2-de2
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.en2-cs2
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.en-en
+src_tgt:
+  - en-cs
+  - cs-en
+  - cs-cs
+  - en-de
+  - de-en
+  - de-de
+  - en-et
+  - et-en
+  - et-et
+  - en-fi
+  - fi-en
+  - fi-fi
+  - en-ru
+  - ru-en
+  - ru-ru
+  - en-tr
+  - tr-en
+  - tr-tr
+  - en-zh
+  - zh-en
+  - zh-zh
+  - en2-de2
+  - en2-cs2
+  - en-en
+save_model: /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/models/wmt/m2m.att_bridge.50.adafactor
+save_checkpoint_steps: 25000
+keep_checkpoint: 10
+seed: 3435
+train_steps: 200000
+valid_steps: 1000000
+warmup_steps: 40000
+report_every: 100
+
+use_attention_bridge: 'true'
+n_layers_attbrg: 6
+layer_type_attbrg: fixed-size
+hidden_ab_size: 4096
+attention_heads: 50
+
+decoder_type: transformer
+encoder_type: transformer
+word_vec_size: 512
+rnn_size: 512
+dec_layers: 6
+enc_layers: 6
+transformer_ff: 2048
+heads: 8
+model_type: text
+
+accum_count: 1
+optim: adafactor
+decay_method: noam
+learning_rate: 3
+max_grad_norm: 0.0
+
+batch_size: 4096
+batch_type: tokens
+normalization: tokens
+dropout: 0.1
+label_smoothing: 0.1
+
+max_generator_batches: 2
+
+param_init: 0.0
+param_init_glorot: 'true'
+position_encoding: 'true'
+
+world_size: 8
+gpu_ranks:
+  - 0
+  - 1
+  - 2
+  - 3
