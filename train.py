@@ -31,6 +31,7 @@ def main(opt):
                 if "-" in identifier:
                     start_id, end_id = map(lambda x: int(x), identifier.split("-"))
                     out += list(range(start_id, end_id + 1))
+                    out = [f"{element:02d}" for element in out]
                 else:
                     out.append(identifier)
             out = [prefix + str(identifier) for identifier in out]
