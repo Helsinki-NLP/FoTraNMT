@@ -101,6 +101,14 @@ def all_reduce_and_rescale_tensors(
         all_reduce_buffer()
 
 
+def all_reduce_tensors_init(tensors, group=None):
+    for t in tensors:
+        if group == None:
+            torch.distributed.all_reduce(t, op=torch.distributed.ReduceOp.MAX)
+        else:
+            torch.distributed.all_reduce(t, op=torch.distributed.ReduceOp.MAX, group=group)
+
+
 def all_gather_list(data, max_size=4096):
     """Gathers arbitrary data from all nodes into a list."""
     world_size = torch.distributed.get_world_size()
