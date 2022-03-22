@@ -8,6 +8,7 @@ from __future__ import print_function
 
 import math
 import pickle
+from typing import List
 
 import torch.distributed
 
@@ -149,7 +150,8 @@ class CommunicationGroup:
     def __init__(
         self,
         torch_dist_group: torch.distributed.distributed_c10d.ProcessGroupNCCL,
-        group_size: int,
+        indices: List[int],
     ):
         self.torch_dist_group = torch_dist_group
-        self.size = group_size
+        self.size = len(indices)
+        self.indices = indices

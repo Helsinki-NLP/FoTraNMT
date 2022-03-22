@@ -353,7 +353,7 @@ class Trainer(object):
                     )
                 ]
                 onmt.utils.distributed.broadcast_tensors(
-                    params, src=0, group=group.torch_dist_group
+                    params, src=min(group.indices), group=group.torch_dist_group
                 )
         # decoders
         for group_lang, group in self.all_dec_comms.items():
@@ -373,9 +373,9 @@ class Trainer(object):
                     )
                 ]
                 onmt.utils.distributed.broadcast_tensors(
-                    params, src=0, group=group.torch_dist_group
+                    params, src=min(group.indices), group=group.torch_dist_group
                 )
-        # average all attention params across the 'world'
+        # sync attention params across the 'world'
         params = [
             p[1].data for p in self.model.named_parameters() if "attention" in p[0]
         ]
