@@ -352,8 +352,8 @@ class Trainer(object):
                         "encoders.{}".format(self.model.encoder_ids[group_lang])
                     )
                 ]
-                onmt.utils.distributed.all_reduce_and_rescale_tensors(
-                    params, float(group.size), group=group.torch_dist_group
+                onmt.utils.distributed.broadcast_tensors(
+                    params, src=0, group=group.torch_dist_group
                 )
         # decoders
         for group_lang, group in self.all_dec_comms.items():
@@ -372,14 +372,14 @@ class Trainer(object):
                         )
                     )
                 ]
-                onmt.utils.distributed.all_reduce_and_rescale_tensors(
-                    params, float(group.size), group=group.torch_dist_group
+                onmt.utils.distributed.broadcast_tensors(
+                    params, src=0, group=group.torch_dist_group
                 )
         # average all attention params across the 'world'
         params = [
             p[1].data for p in self.model.named_parameters() if "attention" in p[0]
         ]
-        onmt.utils.distributed.all_reduce_and_rescale_tensors(params, float(self.n_gpu))
+        onmt.utils.distributed.broadcast_tensors(params)
 
         total_stats = onmt.utils.Statistics()
         report_stats = onmt.utils.Statistics()
@@ -428,6 +428,7 @@ class Trainer(object):
             for lang_pair in langpairweights[0]:
                 train_iter_lang_pairs.append(train_iters[lang_pair])
 
+            # Below, the `*` is silently iterating over the elements of each generator of train_iter_lang_pairs
             for i, batches_norms in enumerate(zip(*train_iter_lang_pairs)):
                 batches = []
                 normalizations = []

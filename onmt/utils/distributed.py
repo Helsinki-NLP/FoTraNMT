@@ -101,6 +101,14 @@ def all_reduce_and_rescale_tensors(
         all_reduce_buffer()
 
 
+def broadcast_tensors(tensors, src=0, group=None):
+    for t in tensors:
+        if group is None:
+            torch.distributed.broadcast(t, src)
+        else:
+            torch.distributed.broadcast(t, src, group=group)
+
+
 def all_gather_list(data, max_size=4096):
     """Gathers arbitrary data from all nodes into a list."""
     world_size = torch.distributed.get_world_size()
