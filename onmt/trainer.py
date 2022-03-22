@@ -352,9 +352,12 @@ class Trainer(object):
                         "encoders.{}".format(self.model.encoder_ids[group_lang])
                     )
                 ]
+                logger.debug("BEFORE - enc lang {}, gpu {}, {}".format(group_lang, self.gpu_rank, params[2][:10]))
+                logger.info("GPU-{}: Broadcasting {} encoder params from source rank {}".format(self.gpu_rank, group_lang, min(group.indices)))
                 onmt.utils.distributed.broadcast_tensors(
                     params, src=min(group.indices), group=group.torch_dist_group
                 )
+                logger.debug("AFTER  - enc lang {}, gpu {}, {}".format(group_lang, self.gpu_rank, params[2][:10]))
         # decoders
         for group_lang, group in self.all_dec_comms.items():
             if (
@@ -372,9 +375,12 @@ class Trainer(object):
                         )
                     )
                 ]
+                logger.debug("BEFORE - dec lang {}, gpu {}, {}".format(group_lang, self.gpu_rank, params[2][:10]))
+                logger.info("GPU-{}: Broadcasting {} decoder params from source rank {}".format(self.gpu_rank, group_lang, min(group.indices)))
                 onmt.utils.distributed.broadcast_tensors(
                     params, src=min(group.indices), group=group.torch_dist_group
                 )
+                logger.debug("AFTER  - dec lang {}, gpu {}, {}".format(group_lang, self.gpu_rank, params[2][:10]))
         # sync attention params across the 'world'
         params = [
             p[1].data for p in self.model.named_parameters() if "attention" in p[0]
