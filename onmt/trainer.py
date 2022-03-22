@@ -675,7 +675,7 @@ class Trainer(object):
                         ]
                         # logger.info("GPU {} BEFORE - Enc: group_lang = {}, grads = {}".format(self.gpu_rank, group_lang, grads[2][:10]))
                         onmt.utils.distributed.all_reduce_and_rescale_tensors(
-                            grads, float(1), group=group.torch_dist_group
+                            grads, float(group.size), group=group.torch_dist_group
                         )
                         # logger.info("GPU {} AFTER - Enc: group_lang = {}, grads = {}".format(self.gpu_rank, group_lang, grads[2][:10]))
                     # torch.cuda.synchronize()
@@ -707,7 +707,7 @@ class Trainer(object):
                         ]
                         # logger.info("GPU {} BEFORE - Dec: group_lang = {}, grads = {}".format(self.gpu_rank, group_lang, grads[2][:10]))
                         onmt.utils.distributed.all_reduce_and_rescale_tensors(
-                            grads, float(1), group=group.torch_dist_group
+                            grads, float(group.size), group=group.torch_dist_group
                         )
                         # logger.info("GPU {} AFTER - Dec: group_lang = {}, grads = {}".format(self.gpu_rank, group_lang, grads[2][:10]))
 
@@ -719,7 +719,7 @@ class Trainer(object):
                     and "attention" in p[0]
                     and p[1].grad is not None
                 ]
-                onmt.utils.distributed.all_reduce_and_rescale_tensors(grads, float(1))
+                onmt.utils.distributed.all_reduce_and_rescale_tensors(grads, float(self.n_gpu))
 
             for src_lang in set(src_langs):
                 optim_enc = self.optim["enc"][src_lang]
