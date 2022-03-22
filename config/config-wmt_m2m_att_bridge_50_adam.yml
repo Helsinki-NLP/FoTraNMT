@@ -20,8 +20,8 @@ data:
   - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.en-zh
   - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.zh-en
   - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.zh-zh
-  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.en2-de2
-  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.en2-cs2
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.en-de
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.en-cs
   - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.en-en
 src_tgt:
   - en-cs
@@ -45,8 +45,8 @@ src_tgt:
   - en-zh
   - zh-en
   - zh-zh
-  - en2-de2
-  - en2-cs2
+  - en-de
+  - en-cs
   - en-en
 save_model: /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/models/wmt/m2m.att_bridge.50.adam
 save_checkpoint_steps: 25000

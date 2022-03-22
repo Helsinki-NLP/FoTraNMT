@@ -1,54 +1,54 @@
 data:
-  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.en-cs
   - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.cs-en
-  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.cs-cs
-  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.en-de
-  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.de-en
-  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.de-de
   - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.en-et
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.cs-cs
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.de-en
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.en-cs
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.de-de
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.en-de
   - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.et-en
   - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.et-et
-  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.en-fi
   - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.fi-en
-  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.fi-fi
   - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.en-ru
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.fi-fi
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.en-fi
   - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.ru-en
   - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.ru-ru
   - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.en-tr
-  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.tr-en
-  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.tr-tr
-  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.en-zh
   - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.zh-en
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.tr-tr
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.tr-en
+  - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.en-zh
   - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.zh-zh
   - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.en-de
   - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.en-cs
   - /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/data/wmt/wmt.en-en
 src_tgt:
-  - en-cs
   - cs-en
-  - cs-cs
-  - en-de
-  - de-en
-  - de-de
   - en-et
+  - cs-cs
+  - de-en
+  - en-cs
+  - de-de
+  - en-de
   - et-en
   - et-et
-  - en-fi
   - fi-en
-  - fi-fi
   - en-ru
+  - fi-fi
+  - en-fi
   - ru-en
   - ru-ru
   - en-tr
-  - tr-en
-  - tr-tr
-  - en-zh
   - zh-en
+  - tr-tr
+  - tr-en
+  - en-zh
   - zh-zh
   - en-de
   - en-cs
   - en-en
-save_model: /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/models/wmt/m2m.att_bridge.50.adafactor
+save_model: /scratch/project_2005099/members/micheleb/projects/scaleUpMNMT/models/wmt/m2m.att_bridge.50.adam.ale
 save_checkpoint_steps: 25000
 keep_checkpoint: 10
 seed: 3435
@@ -75,8 +75,10 @@ heads: 8
 model_type: text
 
 accum_count: 1
-optim: adafactor
-decay_method: none
+optim: adam
+adam_beta1: 0.9
+adam_beta2: 0.998
+decay_method: noam
 learning_rate: 3
 max_grad_norm: 0.0
 
