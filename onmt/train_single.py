@@ -257,7 +257,7 @@ def main(opt, unique_device_id):
                 logger.info("Enc comm group {} {}".format(l, indices))
             all_enc_comms[l] = CommunicationGroup(
                 torch_dist_group=torch.distributed.new_group(indices),
-                group_size=len(indices),
+                indices=indices,
             )
 
     all_dec_comms = OrderedDict()
@@ -270,7 +270,7 @@ def main(opt, unique_device_id):
                 logger.info("Dec comm group {} {}".format(l, indices))
             all_dec_comms[l] = CommunicationGroup(
                 torch_dist_group=torch.distributed.new_group(indices),
-                group_size=len(indices),
+                indices=indices,
             )
 
     # Build model.

@@ -352,9 +352,12 @@ class Trainer(object):
                         "encoders.{}".format(self.model.encoder_ids[group_lang])
                     )
                 ]
-                onmt.utils.distributed.all_reduce_and_rescale_tensors(
-                    params, float(group.size), group=group.torch_dist_group
+                logger.debug("BEFORE - enc lang {}, gpu {}, {}".format(group_lang, self.gpu_rank, params[2][:10]))
+                logger.info("GPU-{}: Broadcasting {} encoder params from source rank {}".format(self.gpu_rank, group_lang, min(group.indices)))
+                onmt.utils.distributed.broadcast_tensors(
+                    params, src=min(group.indices), group=group.torch_dist_group
                 )
+                logger.debug("AFTER  - enc lang {}, gpu {}, {}".format(group_lang, self.gpu_rank, params[2][:10]))
         # decoders
         for group_lang, group in self.all_dec_comms.items():
             if (
@@ -372,14 +375,17 @@ class Trainer(object):
                         )
                     )
                 ]
-                onmt.utils.distributed.all_reduce_and_rescale_tensors(
-                    params, float(group.size), group=group.torch_dist_group
+                logger.debug("BEFORE - dec lang {}, gpu {}, {}".format(group_lang, self.gpu_rank, params[2][:10]))
+                logger.info("GPU-{}: Broadcasting {} decoder params from source rank {}".format(self.gpu_rank, group_lang, min(group.indices)))
+                onmt.utils.distributed.broadcast_tensors(
+                    params, src=min(group.indices), group=group.torch_dist_group
                 )
-        # average all attention params across the 'world'
+                logger.debug("AFTER  - dec lang {}, gpu {}, {}".format(group_lang, self.gpu_rank, params[2][:10]))
+        # sync attention params across the 'world'
         params = [
             p[1].data for p in self.model.named_parameters() if "attention" in p[0]
         ]
-        onmt.utils.distributed.all_reduce_and_rescale_tensors(params, float(self.n_gpu))
+        onmt.utils.distributed.broadcast_tensors(params)
 
         total_stats = onmt.utils.Statistics()
         report_stats = onmt.utils.Statistics()
@@ -428,6 +434,7 @@ class Trainer(object):
             for lang_pair in langpairweights[0]:
                 train_iter_lang_pairs.append(train_iters[lang_pair])
 
+            # Below, the `*` is silently iterating over the elements of each generator of train_iter_lang_pairs
             for i, batches_norms in enumerate(zip(*train_iter_lang_pairs)):
                 batches = []
                 normalizations = []
@@ -675,7 +682,7 @@ class Trainer(object):
                         ]
                         # logger.info("GPU {} BEFORE - Enc: group_lang = {}, grads = {}".format(self.gpu_rank, group_lang, grads[2][:10]))
                         onmt.utils.distributed.all_reduce_and_rescale_tensors(
-                            grads, float(1), group=group.torch_dist_group
+                            grads, float(group.size), group=group.torch_dist_group
                         )
                         # logger.info("GPU {} AFTER - Enc: group_lang = {}, grads = {}".format(self.gpu_rank, group_lang, grads[2][:10]))
                     # torch.cuda.synchronize()
@@ -707,7 +714,7 @@ class Trainer(object):
                         ]
                         # logger.info("GPU {} BEFORE - Dec: group_lang = {}, grads = {}".format(self.gpu_rank, group_lang, grads[2][:10]))
                         onmt.utils.distributed.all_reduce_and_rescale_tensors(
-                            grads, float(1), group=group.torch_dist_group
+                            grads, float(group.size), group=group.torch_dist_group
                         )
                         # logger.info("GPU {} AFTER - Dec: group_lang = {}, grads = {}".format(self.gpu_rank, group_lang, grads[2][:10]))
 
@@ -719,7 +726,7 @@ class Trainer(object):
                     and "attention" in p[0]
                     and p[1].grad is not None
                 ]
-                onmt.utils.distributed.all_reduce_and_rescale_tensors(grads, float(1))
+                onmt.utils.distributed.all_reduce_and_rescale_tensors(grads, float(self.n_gpu))
 
             for src_lang in set(src_langs):
                 optim_enc = self.optim["enc"][src_lang]
