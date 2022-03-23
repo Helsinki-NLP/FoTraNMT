@@ -449,6 +449,8 @@ class Trainer(object):
                             % (self.gpu_rank, i + 1, len(batch))
                         )
 
+                print("normalizations {}".format(normalizations))
+                # TODO: why this? Is it appropriate for our case?
                 if self.n_gpu > 1:
                     normalizations = [
                         sum(onmt.utils.distributed.all_gather_list(normalization))

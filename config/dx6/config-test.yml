@@ -3,11 +3,15 @@ data:
   - data/sample_data/m30k.de-fr
   - data/sample_data/m30k.fr-fr
   - data/sample_data/m30k.en-cs
+  - data/sample_data/m30k.fr-de
+
 src_tgt:
   - en-de
   - de-fr
   - fr-fr
   - en-cs
+  - fr-de
+
 save_model: model/demo_short/MULTILINGUAL_MULTI
 save_checkpoint_steps: 25000
 keep_checkpoint: 10
