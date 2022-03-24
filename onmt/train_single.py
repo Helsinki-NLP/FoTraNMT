@@ -3,8 +3,8 @@
 import math
 import os
 from collections import OrderedDict
+from typing import List
 
-import numpy as np
 import torch
 
 from onmt.inputters.inputter import build_dataset_iter, load_old_vocab, old_style_vocab
@@ -252,8 +252,14 @@ def main(opt, unique_device_id):
         encoder_list.append(src_lang)
         decoder_list.append(tgt_lang)
 
-    encoder_splits = np.array_split(np.array(encoder_list), opt.world_size)
-    decoder_splits = np.array_split(np.array(decoder_list), opt.world_size)
+    def build_splits(allocation_indices: List[int], my_list: List[str]) -> List[List[str]]:
+        out = [[] for _ in range(allocation_indices[-1] + 1)]
+        for i, value in enumerate(allocation_indices):
+            out[value].append(my_list[i])
+        return out
+
+    encoder_splits = build_splits(gpu_alloc_idx, encoder_list)
+    decoder_splits = build_splits(gpu_alloc_idx, decoder_list)
     logger.debug("encoder_splits: {}".format(encoder_splits))
     logger.debug("decoder_splits: {}".format(decoder_splits))
 
