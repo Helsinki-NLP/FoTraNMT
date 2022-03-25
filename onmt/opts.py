@@ -547,7 +547,7 @@ def preprocess_opts(parser):
         "--src_seq_length",
         "-src_seq_length",
         type=int,
-        default=50,
+        default=250,
         help="Maximum source sequence length",
     )
     group.add(
@@ -561,7 +561,7 @@ def preprocess_opts(parser):
         "--tgt_seq_length",
         "-tgt_seq_length",
         type=int,
-        default=50,
+        default=250,
         help="Maximum target sequence length to keep.",
     )
     group.add(
