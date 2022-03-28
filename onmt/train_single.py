@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 """Training on a single process."""
+import math
 import os
 from collections import OrderedDict
+from typing import List
 
-import numpy as np
 import torch
 
 from onmt.inputters.inputter import build_dataset_iter, load_old_vocab, old_style_vocab
@@ -113,10 +114,15 @@ def main(opt, unique_device_id):
 
     # Create a lookup list for the GPU-allocations
     num_pairs = len(opt.src_tgt)
-    pairs_per_gpu = num_pairs // opt.world_size
+    pairs_per_gpu = math.ceil(num_pairs / opt.world_size)
+    pairs_last_gpu = num_pairs % pairs_per_gpu
     gpu_alloc_idx = []
-    for i in range(opt.world_size):
+    for i in range(opt.world_size - 1):
         gpu_alloc_idx += [i] * pairs_per_gpu
+    if pairs_last_gpu:
+        gpu_alloc_idx += [opt.world_size - 1] * pairs_last_gpu
+    else:
+        gpu_alloc_idx += [opt.world_size - 1] * pairs_per_gpu
     if is_master(unique_device_id):
         logger.info("Pairs: {}".format(opt.src_tgt))
         logger.info("gpu_alloc_indices: {}".format(gpu_alloc_idx))
@@ -246,8 +252,16 @@ def main(opt, unique_device_id):
         encoder_list.append(src_lang)
         decoder_list.append(tgt_lang)
 
-    encoder_splits = np.split(np.array(encoder_list), opt.world_size)
-    decoder_splits = np.split(np.array(decoder_list), opt.world_size)
+    def build_splits(allocation_indices: List[int], my_list: List[str]) -> List[List[str]]:
+        out = [[] for _ in range(allocation_indices[-1] + 1)]
+        for i, value in enumerate(allocation_indices):
+            out[value].append(my_list[i])
+        return out
+
+    encoder_splits = build_splits(gpu_alloc_idx, encoder_list)
+    decoder_splits = build_splits(gpu_alloc_idx, decoder_list)
+    logger.debug("encoder_splits: {}".format(encoder_splits))
+    logger.debug("decoder_splits: {}".format(decoder_splits))
 
     all_enc_comms = OrderedDict()
     for l in sorted(set(encoder_list)):

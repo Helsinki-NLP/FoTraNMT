@@ -456,11 +456,11 @@ class Trainer(object):
                             % (self.gpu_rank, i + 1, len(batch))
                         )
 
-                if self.n_gpu > 1:
-                    normalizations = [
-                        sum(onmt.utils.distributed.all_gather_list(normalization))
-                        for normalization in normalizations
-                    ]
+                # if self.n_gpu > 1:
+                #     normalizations = [
+                #         sum(onmt.utils.distributed.all_gather_list(normalization))
+                #         for normalization in normalizations
+                #     ]
 
                 self._gradient_accumulation(
                     batches,
