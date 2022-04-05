@@ -336,56 +336,56 @@ class Trainer(object):
             logger.info(
                 "Start training loop and validate every %d steps...", valid_steps
             )
-
-        logger.info("Syncing shared parameters with other devices")
         device_src_langs = [pair[0] for pair in train_iter_fcts.keys()]
         device_tgt_langs = [pair[1] for pair in train_iter_fcts.keys()]
-        # encoders
-        for group_lang, group in self.all_enc_comms.items():
-            if (
-                group_lang in device_src_langs
-            ):  # check if the lang is in the encoder list of the device
-                params = [
-                    p[1].data
-                    for p in self.model.named_parameters()
-                    if p[0].startswith(
-                        "encoders.{}".format(self.model.encoder_ids[group_lang])
-                    )
-                ]
-                logger.debug("BEFORE - enc lang {}, gpu {}, {}".format(group_lang, self.gpu_rank, params[2][:10]))
-                logger.info("GPU-{}: Broadcasting {} encoder params from source rank {}".format(self.gpu_rank, group_lang, min(group.indices)))
-                onmt.utils.distributed.broadcast_tensors(
-                    params, src=min(group.indices), group=group.torch_dist_group
-                )
-                logger.debug("AFTER  - enc lang {}, gpu {}, {}".format(group_lang, self.gpu_rank, params[2][:10]))
-        # decoders
-        for group_lang, group in self.all_dec_comms.items():
-            if (
-                group_lang in device_tgt_langs
-            ):  # check if the lang is in the decoder list of the device
-                params = [
-                    p[1].data
-                    for p in self.model.named_parameters()
-                    if (
-                        p[0].startswith(
-                            "decoders.{}".format(self.model.decoder_ids[group_lang])
+        if self.n_gpu > 1:
+            logger.info("Syncing shared parameters with other devices")
+            # encoders
+            for group_lang, group in self.all_enc_comms.items():
+                if (
+                    group_lang in device_src_langs
+                ):  # check if the lang is in the encoder list of the device
+                    params = [
+                        p[1].data
+                        for p in self.model.named_parameters()
+                        if p[0].startswith(
+                            "encoders.{}".format(self.model.encoder_ids[group_lang])
                         )
-                        or p[0].startswith(
-                            "generators.{}".format(self.model.decoder_ids[group_lang])
-                        )
+                    ]
+                    logger.debug("BEFORE - enc lang {}, gpu {}, {}".format(group_lang, self.gpu_rank, params[2][:10]))
+                    logger.info("GPU-{}: Broadcasting {} encoder params from source rank {}".format(self.gpu_rank, group_lang, min(group.indices)))
+                    onmt.utils.distributed.broadcast_tensors(
+                        params, src=min(group.indices), group=group.torch_dist_group
                     )
-                ]
-                logger.debug("BEFORE - dec lang {}, gpu {}, {}".format(group_lang, self.gpu_rank, params[2][:10]))
-                logger.info("GPU-{}: Broadcasting {} decoder params from source rank {}".format(self.gpu_rank, group_lang, min(group.indices)))
-                onmt.utils.distributed.broadcast_tensors(
-                    params, src=min(group.indices), group=group.torch_dist_group
-                )
-                logger.debug("AFTER  - dec lang {}, gpu {}, {}".format(group_lang, self.gpu_rank, params[2][:10]))
-        # sync attention params across the 'world'
-        params = [
-            p[1].data for p in self.model.named_parameters() if "attention" in p[0]
-        ]
-        onmt.utils.distributed.broadcast_tensors(params)
+                    logger.debug("AFTER  - enc lang {}, gpu {}, {}".format(group_lang, self.gpu_rank, params[2][:10]))
+            # decoders
+            for group_lang, group in self.all_dec_comms.items():
+                if (
+                    group_lang in device_tgt_langs
+                ):  # check if the lang is in the decoder list of the device
+                    params = [
+                        p[1].data
+                        for p in self.model.named_parameters()
+                        if (
+                            p[0].startswith(
+                                "decoders.{}".format(self.model.decoder_ids[group_lang])
+                            )
+                            or p[0].startswith(
+                                "generators.{}".format(self.model.decoder_ids[group_lang])
+                            )
+                        )
+                    ]
+                    logger.debug("BEFORE - dec lang {}, gpu {}, {}".format(group_lang, self.gpu_rank, params[2][:10]))
+                    logger.info("GPU-{}: Broadcasting {} decoder params from source rank {}".format(self.gpu_rank, group_lang, min(group.indices)))
+                    onmt.utils.distributed.broadcast_tensors(
+                        params, src=min(group.indices), group=group.torch_dist_group
+                    )
+                    logger.debug("AFTER  - dec lang {}, gpu {}, {}".format(group_lang, self.gpu_rank, params[2][:10]))
+            # sync attention params across the 'world'
+            params = [
+                p[1].data for p in self.model.named_parameters() if "attention" in p[0]
+            ]
+            onmt.utils.distributed.broadcast_tensors(params)
 
         total_stats = onmt.utils.Statistics()
         report_stats = onmt.utils.Statistics()
