@@ -21,7 +21,7 @@ seed: 3435
 train_steps: 200000
 valid_steps: 1000000
 warmup_steps: 40000
-report_every: 1
+report_every: 10
 
 use_attention_bridge: 'true'
 n_layers_attbrg: 6
