@@ -1,16 +1,18 @@
 data:
   - data/sample_data/m30k.en-de
-  - data/sample_data/m30k.de-fr
-  - data/sample_data/m30k.fr-fr
+  - data/sample_data/m30k.de-en
+  - data/sample_data/m30k.de-de
   - data/sample_data/m30k.en-cs
-  - data/sample_data/m30k.fr-de
+  - data/sample_data/m30k.cs-en
+  - data/sample_data/m30k.cs-cs
 
 src_tgt:
   - en-de
-  - de-fr
-  - fr-fr
+  - de-en
+  - de-de
   - en-cs
-  - fr-de
+  - cs-en
+  - cs-cs
 
 save_model: model/demo_short/MULTILINGUAL_MULTI
 save_checkpoint_steps: 25000
@@ -19,7 +21,7 @@ seed: 3435
 train_steps: 200000
 valid_steps: 1000000
 warmup_steps: 40000
-report_every: 10
+report_every: 1
 
 use_attention_bridge: 'true'
 n_layers_attbrg: 6

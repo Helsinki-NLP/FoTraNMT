@@ -662,63 +662,10 @@ class Trainer(object):
                             k,
                         )
 
-        # 4. Update the parameters and statistics.
-        if self.accum_count == 1:
-            # Multi GPU gradient gather
-            if self.n_gpu > 1:
-                # Reduce all encoder grads for duplicate encoders using subcommunication groups
-                for group_lang, group in self.all_enc_comms.items():
-                    if (
-                        group_lang in src_langs
-                    ):  # not all communication group languages are present in every device
-                        grads = [
-                            p[1].grad.data
-                            for p in self.model.named_parameters()
-                            if p[1].requires_grad
-                            and p[0].startswith(
-                                "encoders.{}".format(self.model.encoder_ids[group_lang])
-                            )
-                            and p[1].grad is not None
-                        ]
-                        # logger.info("GPU {} BEFORE - Enc: group_lang = {}, grads = {}".format(self.gpu_rank, group_lang, grads[2][:10]))
-                        onmt.utils.distributed.all_reduce_and_rescale_tensors(
-                            grads, float(group.size), group=group.torch_dist_group
-                        )
-                        # logger.info("GPU {} AFTER - Enc: group_lang = {}, grads = {}".format(self.gpu_rank, group_lang, grads[2][:10]))
-                    # torch.cuda.synchronize()
-                    # torch.distributed.barrier()
-
-                # Reduce all decoder grads for duplicate decoders using subcommunication groups
-                for group_lang, group in self.all_dec_comms.items():
-                    if (
-                        group_lang in tgt_langs
-                    ):  # not all communication group languages are present in every device
-                        # decoders
-                        grads = [
-                            p[1].grad.data
-                            for p in self.model.named_parameters()
-                            if p[1].requires_grad
-                            and (
-                                p[0].startswith(
-                                    "decoders.{}".format(
-                                        self.model.decoder_ids[group_lang]
-                                    )
-                                )
-                                or p[0].startswith(
-                                    "generators.{}".format(
-                                        self.model.decoder_ids[group_lang]
-                                    )
-                                )
-                            )
-                            and p[1].grad is not None
-                        ]
-                        # logger.info("GPU {} BEFORE - Dec: group_lang = {}, grads = {}".format(self.gpu_rank, group_lang, grads[2][:10]))
-                        onmt.utils.distributed.all_reduce_and_rescale_tensors(
-                            grads, float(group.size), group=group.torch_dist_group
-                        )
-                        # logger.info("GPU {} AFTER - Dec: group_lang = {}, grads = {}".format(self.gpu_rank, group_lang, grads[2][:10]))
-
-                # Reduce all attention grads across the 'world'
+            if self.accum_count == 1:
+                # TODO: implement case accum_count > 1
+                # Average all attention grads across the 'world'
+                # logger.info("Averaging attention bridge weights")
                 grads = [
                     p[1].grad.data
                     for p in self.model.named_parameters()
@@ -728,35 +675,66 @@ class Trainer(object):
                 ]
                 onmt.utils.distributed.all_reduce_and_rescale_tensors(grads, float(self.n_gpu))
 
-            for src_lang in set(src_langs):
+                # Average encoder grads
+                enc_comm_group = self.all_enc_comms.get(src_lang, None)
+                if enc_comm_group:
+                    # logger.info("Averaging {} encoder weights".format(src_lang))
+                    grads = [
+                        p[1].grad.data
+                        for p in self.model.named_parameters()
+                        if p[1].requires_grad
+                           and p[0].startswith(
+                            "encoders.{}".format(self.model.encoder_ids[src_lang])
+                        )
+                           and p[1].grad is not None
+                    ]
+                    # logger.info("GPU {} BEFORE - Enc: group_lang = {}, grads = {}".format(self.gpu_rank, group_lang, grads[2][:10]))
+                    onmt.utils.distributed.all_reduce_and_rescale_tensors(
+                        grads, float(enc_comm_group.size), group=enc_comm_group.torch_dist_group
+                    )
+                # Average decoder grads
+                dec_comm_group = self.all_dec_comms.get(tgt_lang, None)
+                if dec_comm_group:
+                    # logger.info("Averaging {} decoder weights".format(tgt_lang))
+                    grads = [
+                        p[1].grad.data
+                        for p in self.model.named_parameters()
+                        if p[1].requires_grad
+                           and (
+                                   p[0].startswith(
+                                       "decoders.{}".format(
+                                           self.model.decoder_ids[tgt_lang]
+                                       )
+                                   )
+                                   or p[0].startswith(
+                               "generators.{}".format(
+                                   self.model.decoder_ids[tgt_lang]
+                               )
+                           )
+                           )
+                           and p[1].grad is not None
+                    ]
+                    # logger.info("GPU {} BEFORE - Dec: group_lang = {}, grads = {}".format(self.gpu_rank, group_lang, grads[2][:10]))
+                    onmt.utils.distributed.all_reduce_and_rescale_tensors(
+                        grads, float(dec_comm_group.size), group=dec_comm_group.torch_dist_group
+                    )
+
                 optim_enc = self.optim["enc"][src_lang]
                 optim_enc.step()
                 optim_enc.zero_grad()
-            for tgt_lang in set(tgt_langs):
                 optim_dec = self.optim["dec"][tgt_lang]
                 optim_dec.step()
                 optim_dec.zero_grad()
                 optim_gen = self.optim["gen"][tgt_lang]
                 optim_gen.step()
                 optim_gen.zero_grad()
-            optim_att = self.optim["att"]
-            optim_att.step()
-            optim_att.zero_grad()
-            self.global_training_step += 1
+                optim_att = self.optim["att"]
+                optim_att.step()
+                optim_att.zero_grad()
+                self.global_training_step += 1
 
-            # If truncated, don't backprop fully.
-            # TO CHECK
-            # if dec_state is not None:
-            #    dec_state.detach()
-            """
-            if self.model.decoder.state is not None:
-                self.model.decoder.detach_state()
-            """
-            for decoder in self.model.decoders:
-                if decoder.state is not None:
-                    decoder.detach_state()
-            # if self.model.decoders[decoder_id].state is not None:
-            #     self.model.decoders[decoder_id].detach_state()
+                logger.debug("Detaching decoder {}".format(tgt_lang))
+                self.model.decoders[self.model.decoder_ids[tgt_lang]].detach_state()
 
         # # in case of multi step gradient accumulation,
         # # update only after accum batches
