@@ -651,7 +651,7 @@ class Trainer(object):
                         k,
                     )
 
-        if self.accum_count == 1:
+        if self.n_gpu > 1:
             # TODO: implement case accum_count > 1
             # Average all attention grads across the 'world'
             grads = [
@@ -709,22 +709,22 @@ class Trainer(object):
                 )
                 # logger.info("GPU {}  AFTER - Dec: {}, grads = {}".format(self.gpu_rank, tgt_lang, grads[2][:10]))
 
-            optim_enc = self.optim["enc"][src_lang]
-            optim_enc.step()
-            optim_enc.zero_grad()
-            optim_dec = self.optim["dec"][tgt_lang]
-            optim_dec.step()
-            optim_dec.zero_grad()
-            optim_gen = self.optim["gen"][tgt_lang]
-            optim_gen.step()
-            optim_gen.zero_grad()
-            optim_att = self.optim["att"]
-            optim_att.step()
-            optim_att.zero_grad()
-            self.global_training_step += 1
+        optim_enc = self.optim["enc"][src_lang]
+        optim_enc.step()
+        optim_enc.zero_grad()
+        optim_dec = self.optim["dec"][tgt_lang]
+        optim_dec.step()
+        optim_dec.zero_grad()
+        optim_gen = self.optim["gen"][tgt_lang]
+        optim_gen.step()
+        optim_gen.zero_grad()
+        optim_att = self.optim["att"]
+        optim_att.step()
+        optim_att.zero_grad()
+        self.global_training_step += 1
 
-            # logger.info("Detaching decoder {}".format(tgt_lang))
-            self.model.decoders[self.model.decoder_ids[tgt_lang]].detach_state()
+        # logger.info("Detaching decoder {}".format(tgt_lang))
+        self.model.decoders[self.model.decoder_ids[tgt_lang]].detach_state()
 
         # # in case of multi step gradient accumulation,
         # # update only after accum batches
