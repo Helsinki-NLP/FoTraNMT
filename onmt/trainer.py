@@ -75,6 +75,7 @@ def build_trainer(
     norm_method = opt.normalization
     accum_count = opt.accum_count
     accum_steps = opt.accum_steps
+    accum_pairs = opt.accum_pairs
     n_gpu = opt.world_size
     average_decay = opt.average_decay
     average_every = opt.average_every
@@ -139,6 +140,7 @@ def build_trainer(
         norm_method,
         accum_count,
         accum_steps,
+        accum_pairs,
         n_gpu,
         gpu_rank,
         all_enc_comms,
@@ -196,6 +198,7 @@ class Trainer(object):
         norm_method="sents",
         accum_count=[1],
         accum_steps=[0],
+        accum_pairs=0,
         n_gpu=1,
         gpu_rank=1,
         all_enc_comms: typing.OrderedDict[str, CommunicationGroup] = None,
@@ -224,6 +227,7 @@ class Trainer(object):
         self.accum_count_l = accum_count
         self.accum_count = accum_count[0]
         self.accum_steps = accum_steps
+        self.accum_pairs = accum_pairs
         self.n_gpu = n_gpu
         self.gpu_rank = gpu_rank
         self.all_enc_comms = all_enc_comms
@@ -429,10 +433,25 @@ class Trainer(object):
             self.batches_info,
         )
 
+        lang_pair_index = 0
         while True:
             train_iter_lang_pairs = []
-            for lang_pair in langpairweights[0]:
+            train_step_src_langs = []
+            train_step_tgt_langs = []
+            train_step_pairs_count = 0
+            while True:  # repeatedly looping over the device language pairs
+                lang_pair = langpairweights[0][lang_pair_index]
                 train_iter_lang_pairs.append(train_iters[lang_pair])
+                train_step_src_langs.append(lang_pair[0])
+                train_step_tgt_langs.append(lang_pair[1])
+                lang_pair_index = (lang_pair_index + 1) % len(langpairweights[0])
+                train_step_pairs_count += 1
+                if self.accum_pairs == 0:  # consider all the device language pairs
+                    if train_step_pairs_count >= len(langpairweights[0]):
+                        break
+                elif train_step_pairs_count >= self.accum_pairs:  # consider only a subset of the device language pairs
+                    break
+            logger.debug("Step language pairs: {}".format([(x, y) for x, y in zip(train_step_src_langs, train_step_tgt_langs)]))
 
             # Below, the `*` is silently iterating over the elements of each generator of train_iter_lang_pairs
             for i, batches_norms in enumerate(zip(*train_iter_lang_pairs)):
@@ -466,8 +485,8 @@ class Trainer(object):
                     batches,
                     normalizations,
                     total_stats,
-                    device_src_langs,
-                    device_tgt_langs,
+                    train_step_src_langs,
+                    train_step_tgt_langs,
                     report_stats,
                     self.activate_extra_loss,
                 )
@@ -752,9 +771,8 @@ class Trainer(object):
             if self.model.decoder.state is not None:
                 self.model.decoder.detach_state()
             """
-            for decoder in self.model.decoders:
-                if decoder.state is not None:
-                    decoder.detach_state()
+            for tgt_lang in tgt_langs:
+                self.model.decoders[self.model.decoder_ids[tgt_lang]].detach_state()
             # if self.model.decoders[decoder_id].state is not None:
             #     self.model.decoders[decoder_id].detach_state()
 
