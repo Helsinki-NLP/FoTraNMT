@@ -49,6 +49,7 @@ heads: 8
 model_type: text
 
 accum_count: 1
+accum_pairs: 4
 optim: adafactor
 adam_beta1: 0.9
 adam_beta2: 0.998

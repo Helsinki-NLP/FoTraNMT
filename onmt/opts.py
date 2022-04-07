@@ -938,6 +938,14 @@ def train_opts(parser):
         help="Steps at which accum_count values change",
     )
     group.add(
+        "--accum_pairs",
+        "-accum_pairs",
+        type=int,
+        default=0,
+        help="Each device accumulates gradients over this many language pairs before communication."
+             "Accumulates over all language pairs if set to zero.",
+    )
+    group.add(
         "--valid_steps",
         "-valid_steps",
         type=int,
