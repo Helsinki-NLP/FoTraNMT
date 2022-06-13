@@ -38,7 +38,7 @@ python3 -m pip install torch torchvision
 
 After installing pytorch, you can run: 
 ```bash
-pip install -r requirements.txt
+pip install six tqdm h5py future configargparse pyYAML
 ```
 
 # Hands-on example
