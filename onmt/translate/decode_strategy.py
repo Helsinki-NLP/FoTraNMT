@@ -1,6 +1,8 @@
 import torch
 from copy import deepcopy
 
+from onmt.utils.misc import tile
+
 
 class DecodeStrategy(object):
     """Base class for generation strategies.
@@ -9,6 +11,7 @@ class DecodeStrategy(object):
         pad (int): Magic integer in output vocab.
         bos (int): Magic integer in output vocab.
         eos (int): Magic integer in output vocab.
+        unk (int): Magic integer in output vocab.
         batch_size (int): Current batch size.
         parallel_paths (int): Decoding strategies like beam search
             use parallel paths. Each batch is repeated ``parallel_paths``
@@ -18,6 +21,7 @@ class DecodeStrategy(object):
         max_length (int): Longest acceptable sequence, not counting
             begin-of-sentence (presumably there has been no EOS
             yet if max_length is used as a cutoff).
+        ban_unk_token (Boolean): Whether unk token is forbidden
         block_ngram_repeat (int): Block beams where
             ``block_ngram_repeat``-grams repeat.
         exclusion_tokens (set[int]): If a gram contains any of these
@@ -29,6 +33,7 @@ class DecodeStrategy(object):
         pad (int): See above.
         bos (int): See above.
         eos (int): See above.
+        unk (int): See above.
         predictions (list[list[LongTensor]]): For each batch, holds a
             list of beam prediction sequences.
         scores (list[list[FloatTensor]]): For each batch, holds a
@@ -51,32 +56,51 @@ class DecodeStrategy(object):
             is the (max) length of the pre-fixed prediction.
         min_length (int): See above.
         max_length (int): See above.
+        ban_unk_token (Boolean): See above.
         block_ngram_repeat (int): See above.
         exclusion_tokens (set[int]): See above.
         return_attention (bool): See above.
         done (bool): See above.
     """
 
-    def __init__(self, pad, bos, eos, batch_size, parallel_paths,
-                 min_length, block_ngram_repeat, exclusion_tokens,
-                 return_attention, max_length):
+    def __init__(
+        self,
+        pad,
+        bos,
+        eos,
+        unk,
+        batch_size,
+        parallel_paths,
+        global_scorer,
+        min_length,
+        block_ngram_repeat,
+        exclusion_tokens,
+        return_attention,
+        max_length,
+        ban_unk_token,
+    ):
 
         # magic indices
         self.pad = pad
         self.bos = bos
         self.eos = eos
+        self.unk = unk
 
         self.batch_size = batch_size
         self.parallel_paths = parallel_paths
+        self.global_scorer = global_scorer
+
         # result caching
         self.predictions = [[] for _ in range(batch_size)]
         self.scores = [[] for _ in range(batch_size)]
         self.attention = [[] for _ in range(batch_size)]
+        self.hypotheses = [[] for _ in range(batch_size)]
 
         self.alive_attn = None
 
         self.min_length = min_length
         self.max_length = max_length
+        self.ban_unk_token = ban_unk_token
 
         self.block_ngram_repeat = block_ngram_repeat
         n_paths = batch_size * parallel_paths
@@ -87,8 +111,31 @@ class DecodeStrategy(object):
 
         self.done = False
 
-    def initialize(self, memory_bank, src_lengths, src_map=None, device=None,
-                   target_prefix=None):
+    def get_device_from_memory_bank(self, memory_bank):
+        if isinstance(memory_bank, tuple):
+            mb_device = memory_bank[0].device
+        else:
+            mb_device = memory_bank.device
+        return mb_device
+
+    def initialize_tile(self, memory_bank, src_lengths, src_map=None, target_prefix=None):
+        def fn_map_state(state, dim):
+            return tile(state, self.beam_size, dim=dim)
+
+        if isinstance(memory_bank, tuple):
+            memory_bank = tuple(tile(x, self.beam_size, dim=1) for x in memory_bank)
+        elif memory_bank is not None:
+            memory_bank = tile(memory_bank, self.beam_size, dim=1)
+        if src_map is not None:
+            src_map = tile(src_map, self.beam_size, dim=1)
+
+        self.memory_lengths = tile(src_lengths, self.beam_size)
+        if target_prefix is not None:
+            target_prefix = tile(target_prefix, self.beam_size, dim=1)
+
+        return fn_map_state, memory_bank, src_map, target_prefix
+
+    def initialize(self, memory_bank, src_lengths, src_map=None, device=None, target_prefix=None):
         """DecodeStrategy subclasses should override :func:`initialize()`.
 
         `initialize` should be called before all actions.
@@ -97,21 +144,22 @@ class DecodeStrategy(object):
         if device is None:
             device = torch.device('cpu')
         self.alive_seq = torch.full(
-            [self.batch_size * self.parallel_paths, 1], self.bos,
-            dtype=torch.long, device=device)
-        self.is_finished = torch.zeros(
-            [self.batch_size, self.parallel_paths],
-            dtype=torch.uint8, device=device)
+            [self.batch_size * self.parallel_paths, 1], self.bos, dtype=torch.long, device=device
+        )
+        self.is_finished = torch.zeros([self.batch_size, self.parallel_paths], dtype=torch.uint8, device=device)
         if target_prefix is not None:
             seq_len, batch_size, n_feats = target_prefix.size()
-            assert batch_size == self.batch_size * self.parallel_paths,\
-                "forced target_prefix should've extend to same number of path!"
+            assert (
+                batch_size == self.batch_size * self.parallel_paths
+            ), "forced target_prefix should've extend to same number of path!"
             target_prefix_words = target_prefix[:, :, 0].transpose(0, 1)
             target_prefix = target_prefix_words[:, 1:]  # remove bos
-            # fix length constraint
+
+            # fix length constraint and remove eos from count
             prefix_non_pad = target_prefix.ne(self.pad).sum(dim=-1).tolist()
-            self.max_length += max(prefix_non_pad)
-            self.min_length += min(prefix_non_pad)
+            self.max_length += max(prefix_non_pad) - 1
+            self.min_length += min(prefix_non_pad) - 1
+
         self.target_prefix = target_prefix  # NOTE: forced prefix words
         return None, memory_bank, src_lengths, src_map
 
@@ -121,6 +169,10 @@ class DecodeStrategy(object):
     def ensure_min_length(self, log_probs):
         if len(self) <= self.min_length:
             log_probs[:, self.eos] = -1e20
+
+    def ensure_unk_removed(self, log_probs):
+        if self.ban_unk_token:
+            log_probs[:, self.unk] = -1e20
 
     def ensure_max_length(self):
         # add one to account for BOS. Don't account for EOS because hitting
@@ -161,8 +213,7 @@ class DecodeStrategy(object):
             # we check paths one by one
 
             current_ngram = tuple(self.alive_seq[path_idx, -n:].tolist())
-            forbidden_tokens = self.forbidden_tokens[path_idx].get(
-                current_ngram, None)
+            forbidden_tokens = self.forbidden_tokens[path_idx].get(current_ngram, None)
             if forbidden_tokens is not None:
                 log_probs[path_idx, list(forbidden_tokens)] = -10e20
 
@@ -184,8 +235,7 @@ class DecodeStrategy(object):
 
             # Reordering forbidden_tokens following beam selection
             # We rebuild a dict to ensure we get the value and not the pointer
-            forbidden_tokens.append(
-                deepcopy(self.forbidden_tokens[path_idx]))
+            forbidden_tokens.append(deepcopy(self.forbidden_tokens[path_idx]))
 
             # Grabing the newly selected tokens and associated ngram
             current_ngram = tuple(seq[-n:].tolist())
@@ -210,21 +260,17 @@ class DecodeStrategy(object):
         """
         _B, vocab_size = log_probs.size()
         step = len(self)
-        if (self.target_prefix is not None and
-                step <= self.target_prefix.size(1)):
+        if self.target_prefix is not None and step <= self.target_prefix.size(1):
             pick_idx = self.target_prefix[:, step - 1].tolist()  # (B)
-            pick_coo = [[path_i, pick] for path_i, pick in enumerate(pick_idx)
-                        if pick not in [self.eos, self.pad]]
-            mask_pathid = [path_i for path_i, pick in enumerate(pick_idx)
-                           if pick in [self.eos, self.pad]]
+            pick_coo = [[path_i, pick] for path_i, pick in enumerate(pick_idx) if pick not in [self.eos, self.pad]]
+            mask_pathid = [path_i for path_i, pick in enumerate(pick_idx) if pick in [self.eos, self.pad]]
             if len(pick_coo) > 0:
                 pick_coo = torch.tensor(pick_coo).to(self.target_prefix)
-                pick_fill_value = torch.ones(
-                    [pick_coo.size(0)], dtype=log_probs.dtype)
+                pick_fill_value = torch.ones([pick_coo.size(0)], dtype=log_probs.dtype)
                 # pickups: Tensor where specified index were set to 1, others 0
                 pickups = torch.sparse_coo_tensor(
-                    pick_coo.t(), pick_fill_value,
-                    size=log_probs.size(), device=log_probs.device).to_dense()
+                    pick_coo.t(), pick_fill_value, size=log_probs.size(), device=log_probs.device
+                ).to_dense()
                 # dropdowns: opposite of pickups, 1 for those shouldn't pick
                 dropdowns = torch.ones_like(pickups) - pickups
                 if len(mask_pathid) > 0:
@@ -234,7 +280,7 @@ class DecodeStrategy(object):
                     dropdowns = dropdowns.masked_fill(path_mask, 0)
                 # Minus dropdowns to log_probs making probabilities of
                 # unspecified index close to 0
-                log_probs -= 10000*dropdowns
+                log_probs -= 10000 * dropdowns
         return log_probs
 
     def maybe_update_target_prefix(self, select_index):

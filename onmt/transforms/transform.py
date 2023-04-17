@@ -17,6 +17,11 @@ class Transform(object):
         """Reproducibility: Set seed for non-deterministic transform."""
         pass
 
+    @classmethod
+    def require_vocab(cls):
+        """Override this method to inform it need vocab to start."""
+        return False
+
     def warm_up(self, vocabs=None):
         """Procedure needed after initialize and before apply.
 
@@ -26,6 +31,10 @@ class Transform(object):
         """
         if self.opts.seed > 0:
             self._set_seed(self.opts.seed)
+        if self.require_vocab():
+            if vocabs is None:
+                raise ValueError(f"{type(self).__name__} requires vocabs!")
+            self.vocabs = vocabs
 
     @classmethod
     def add_options(cls, parser):
@@ -89,60 +98,48 @@ class Transform(object):
         return '{}({})'.format(cls_name, cls_args)
 
 
-class TransformStatistics(object):
-    """Return a statistic counter for Transform."""
+class ObservableStats:
+    """A running observable statistics."""
+
+    __slots__ = []
+
+    def name(self) -> str:
+        """Return class name as name for statistics."""
+        return type(self).__name__
+
+    def update(self, other: "ObservableStats"):
+        """Update current statistics with others."""
+        raise NotImplementedError
+
+    def __str__(self) -> str:
+        return "{}({})".format(self.name(), ", ".join(f"{name}={getattr(self, name)}" for name in self.__slots__))
+
+
+class TransformStatistics:
+    """A observer containing runing statistics."""
 
     def __init__(self):
-        """Initialize statistic counter."""
-        self.reset()
+        self.observables = {}
 
-    def reset(self):
-        """Statistic counters for all transforms."""
-        self.filtered = 0
-        self.words, self.subwords = 0, 0
-        self.n_switchouted, self.so_total = 0, 0
-        self.n_dropped, self.td_total = 0, 0
-        self.n_masked, self.tm_total = 0, 0
-
-    def filter_too_long(self):
-        """Update filtered sentence counter."""
-        self.filtered += 1
-
-    def subword(self, subwords, words):
-        """Update subword counter."""
-        self.words += words
-        self.subwords += subwords
-
-    def switchout(self, n_switchout, n_total):
-        """Update switchout counter."""
-        self.n_switchouted += n_switchout
-        self.so_total += n_total
-
-    def token_drop(self, n_dropped, n_total):
-        """Update token drop counter."""
-        self.n_dropped += n_dropped
-        self.td_total += n_total
-
-    def token_mask(self, n_masked, n_total):
-        """Update token mask counter."""
-        self.n_masked += n_masked
-        self.tm_total += n_total
+    def update(self, observable: ObservableStats):
+        """Adding observable to observe/updating existing observable."""
+        name = observable.name()
+        if name not in self.observables:
+            self.observables[name] = observable
+        else:
+            self.observables[name].update(observable)
 
     def report(self):
-        """Return transform statistics report and reset counter."""
-        msg = ''
-        if self.filtered > 0:
-            msg += f'Filtred sentence: {self.filtered} sent\n'.format()
-        if self.words > 0:
-            msg += f'Subword(SP/Tokenizer): {self.words} -> {self.subwords} tok\n'  # noqa: E501
-        if self.so_total > 0:
-            msg += f'SwitchOut: {self.n_switchouted}/{self.so_total} tok\n'
-        if self.td_total > 0:
-            msg += f'Token dropped: {self.n_dropped}/{self.td_total} tok\n'
-        if self.tm_total > 0:
-            msg += f'Token masked: {self.n_masked}/{self.tm_total} tok\n'
-        self.reset()
-        return msg
+        """Pop out all observing statistics and reporting them."""
+        msgs = []
+        report_ids = list(self.observables.keys())
+        for name in report_ids:
+            observable = self.observables.pop(name)
+            msgs.append(f"\t\t\t* {str(observable)}")
+        if len(msgs) != 0:
+            return "\n".join(msgs)
+        else:
+            return ""
 
 
 class TransformPipe(Transform):
@@ -158,8 +155,7 @@ class TransformPipe(Transform):
     def build_from(cls, transform_list):
         """Return a `TransformPipe` instance build from `transform_list`."""
         for transform in transform_list:
-            assert isinstance(transform, Transform), \
-                "transform should be a instance of Transform."
+            assert isinstance(transform, Transform), "transform should be a instance of Transform."
         transform_pipe = cls(None, transform_list)
         return transform_pipe
 
@@ -186,8 +182,7 @@ class TransformPipe(Transform):
 
         """
         for transform in self.transforms:
-            example = transform.apply(
-                example, is_train=is_train, stats=self.statistics, **kwargs)
+            example = transform.apply(example, is_train=is_train, stats=self.statistics, **kwargs)
             if example is None:
                 break
         return example
@@ -217,6 +212,9 @@ def make_transforms(opts, transforms_cls, fields):
     vocabs = get_vocabs(fields) if fields is not None else None
     transforms = {}
     for name, transform_cls in transforms_cls.items():
+        if transform_cls.require_vocab() and vocabs is None:
+            logger.warning(f"{transform_cls.__name__} require vocab to apply, skip it.")
+            continue
         transform_obj = transform_cls(opts)
         transform_obj.warm_up(vocabs)
         transforms[name] = transform_obj

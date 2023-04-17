@@ -2,16 +2,48 @@
 import torch
 import torch.optim as optim
 from torch.nn.utils import clip_grad_norm_
-import operator
 import functools
-from copy import copy
 from math import sqrt
 import types
 import importlib
 from onmt.utils.misc import fn_args
+import math
 
 
-def build_torch_optimizer(model, opt):
+def attention_bridge_optimizer(model, scheduler, base_optimizer):
+    multiOptims = {}
+    components = [
+        ('encoder', model.encoder, scheduler.get_encoders()),
+        ('decoder', model.decoder, scheduler.get_decoders()),
+        ('generator', model.generator, scheduler.get_generators()),
+    ]
+    for component_name, components, component_ids in components:
+        for component_id in component_ids:
+            params = []
+            comp = components[f'{component_name}{component_id}']
+            for name, param in comp.named_parameters():
+                if not param.requires_grad:
+                    continue
+                params.append(param)
+            ada = base_optimizer(params)
+            multiOptims[f'{component_name}_{component_id}'] = ada
+
+    attParam = []
+    for name, param in model.attention_bridge.named_parameters():
+        if not param.requires_grad:
+            continue
+        attParam.append(param)
+
+    # skip AB optimizer if AB is not in use
+    if len(attParam):
+        ada = base_optimizer(attParam)
+        multiOptims["ATT"] = ada
+
+    optimizer = MultipleOptimizer(multiOptims, None)
+    return optimizer
+
+
+def build_torch_optimizer(model, opt, scheduler):
     """Builds the PyTorch optimizer.
 
     We use the default parameters for Adam that are suggested by
@@ -37,61 +69,42 @@ def build_torch_optimizer(model, opt):
     if opt.optim == 'sgd':
         optimizer = optim.SGD(params, lr=opt.learning_rate)
     elif opt.optim == 'adagrad':
-        optimizer = optim.Adagrad(
-            params,
-            lr=opt.learning_rate,
-            initial_accumulator_value=opt.adagrad_accumulator_init)
+        optimizer = optim.Adagrad(params, lr=opt.learning_rate, initial_accumulator_value=opt.adagrad_accumulator_init)
     elif opt.optim == 'adadelta':
         optimizer = optim.Adadelta(params, lr=opt.learning_rate)
     elif opt.optim == 'adafactor':
-        optimizer = AdaFactor(
-            params,
-            non_constant_decay=True,
-            enable_factorization=True,
-            weight_decay=0)
+        optimizer = attention_bridge_optimizer(model, scheduler, AdaFactorFairSeq)
     elif opt.optim == 'adam':
-        optimizer = optim.Adam(
-            params,
-            lr=opt.learning_rate,
-            betas=betas,
-            eps=1e-9)
+        optimizer = attention_bridge_optimizer(
+            model, scheduler, lambda params: optim.Adam(params, lr=opt.learning_rate, betas=betas, eps=1e-9)
+        )
     elif opt.optim == 'sparseadam':
-        dense = []
-        sparse = []
+        encs = []
+        decs = []
         for name, param in model.named_parameters():
             if not param.requires_grad:
                 continue
             # TODO: Find a better way to check for sparse gradients.
-            if 'embed' in name:
-                sparse.append(param)
+            if 'decoder' in name:
+                # print(name)
+                decs.append(param)
             else:
-                dense.append(param)
+                encs.append(param)
         optimizer = MultipleOptimizer(
-            [optim.Adam(
-                dense,
-                lr=opt.learning_rate,
-                betas=betas,
-                eps=1e-8),
-             optim.SparseAdam(
-                 sparse,
-                 lr=opt.learning_rate,
-                 betas=betas,
-                 eps=1e-8)])
+            [optim.Adam(encs, lr=opt.learning_rate, betas=betas, eps=1e-9), AdaFactorFairSeq(decs, warmup_init=True)]
+        )
     elif opt.optim == 'fusedadam':
         # we use here a FusedAdam() copy of an old Apex repo
-        optimizer = FusedAdam(
-            params,
-            lr=opt.learning_rate,
-            betas=betas)
+        optimizer = FusedAdam(params, lr=opt.learning_rate, betas=betas)
         if opt.model_dtype == 'fp16':
             import apex
+
             # In this case use the old FusedAdam with FP16_optimizer wrapper
             static_loss_scale = opt.loss_scale
             dynamic_loss_scale = opt.loss_scale == 0
             optimizer = apex.contrib.optimizers.FP16_Optimizer(
-                optimizer,
-                static_loss_scale=static_loss_scale,
-                dynamic_loss_scale=dynamic_loss_scale)
+                optimizer, static_loss_scale=static_loss_scale, dynamic_loss_scale=dynamic_loss_scale
+            )
     else:
         raise ValueError('Invalid optimizer type: ' + opt.optim)
 
@@ -101,10 +114,7 @@ def build_torch_optimizer(model, opt):
 def make_learning_rate_decay_fn(opt):
     """Returns the learning decay function from options."""
     if opt.decay_method == 'noam':
-        return functools.partial(
-            noam_decay,
-            warmup_steps=opt.warmup_steps,
-            model_size=opt.rnn_size)
+        return functools.partial(noam_decay, warmup_steps=opt.warmup_steps, model_size=opt.rnn_size)
     elif opt.decay_method == 'noamwd':
         return functools.partial(
             noamwd_decay,
@@ -112,35 +122,33 @@ def make_learning_rate_decay_fn(opt):
             model_size=opt.rnn_size,
             rate=opt.learning_rate_decay,
             decay_steps=opt.decay_steps,
-            start_step=opt.start_decay_steps)
+            start_step=opt.start_decay_steps,
+        )
     elif opt.decay_method == 'rsqrt':
-        return functools.partial(
-            rsqrt_decay, warmup_steps=opt.warmup_steps)
+        return functools.partial(rsqrt_decay, warmup_steps=opt.warmup_steps)
     elif opt.start_decay_steps is not None:
         return functools.partial(
             exponential_decay,
             rate=opt.learning_rate_decay,
             decay_steps=opt.decay_steps,
-            start_step=opt.start_decay_steps)
+            start_step=opt.start_decay_steps,
+        )
 
 
 def noam_decay(step, warmup_steps, model_size):
     """Learning rate schedule described in
     https://arxiv.org/pdf/1706.03762.pdf.
     """
-    return (
-        model_size ** (-0.5) *
-        min(step ** (-0.5), step * warmup_steps**(-1.5)))
+    return model_size ** (-0.5) * min(step ** (-0.5), step * warmup_steps ** (-1.5))
 
 
-def noamwd_decay(step, warmup_steps,
-                 model_size, rate, decay_steps, start_step=0):
-    """Learning rate schedule optimized for huge batches
-    """
+def noamwd_decay(step, warmup_steps, model_size, rate, decay_steps, start_step=0):
+    """Learning rate schedule optimized for huge batches"""
     return (
-        model_size ** (-0.5) *
-        min(step ** (-0.5), step * warmup_steps**(-1.5)) *
-        rate ** (max(step - start_step + decay_steps, 0) // decay_steps))
+        model_size ** (-0.5)
+        * min(step ** (-0.5), step * warmup_steps ** (-1.5))
+        * rate ** (max(step - start_step + decay_steps, 0) // decay_steps)
+    )
 
 
 def exponential_decay(step, rate, decay_steps, start_step=0):
@@ -156,43 +164,37 @@ def rsqrt_decay(step, warmup_steps):
 
 
 class MultipleOptimizer(object):
-    """ Implement multiple optimizers needed for sparse adam """
+    """Implement multiple optimizers needed for sparse adam"""
 
-    def __init__(self, op):
-        """ ? """
+    def __init__(self, op, multiOptims_Langs=None):
         self.optimizers = op
+        self.multiOptims_Langs = multiOptims_Langs
+        # self.size = len(self.optimizers)
 
     @property
     def param_groups(self):
         param_groups = []
-        for optimizer in self.optimizers:
+        for name in self.optimizers:
+            optimizer = self.optimizers[name]
             param_groups.extend(optimizer.param_groups)
+        #        for optimizer in self.optimizers:
+        #            param_groups.extend(optimizer.param_groups)
         return param_groups
 
     def zero_grad(self):
-        """ ? """
-        for op in self.optimizers:
-            op.zero_grad()
+        """Reset the gradient of all sub-optimizers to zero"""
+        for name in self.optimizers:
+            self.optimizers[name].zero_grad()
 
-    def step(self):
-        """ ? """
-        for op in self.optimizers:
-            op.step()
+    #        for op in self.optimizers:
+    #            op.zero_grad()
 
-    @property
-    def state(self):
-        """ ? """
-        return {k: v for op in self.optimizers for k, v in op.state.items()}
-
-    def state_dict(self):
-        """ ? """
-        return [op.state_dict() for op in self.optimizers]
-
-    def load_state_dict(self, state_dicts):
-        """ ? """
-        assert len(state_dicts) == len(self.optimizers)
-        for i in range(len(state_dicts)):
-            self.optimizers[i].load_state_dict(state_dicts[i])
+    def step(self, langsEnc=None, langsDec=None):
+        """Step through all the suboptimizers"""
+        #        for op in self.optimizers:
+        #            op.step()
+        for name in self.optimizers:
+            self.optimizers[name].step()
 
 
 class Optimizer(object):
@@ -204,19 +206,15 @@ class Optimizer(object):
     as grad manipulations.
     """
 
-    def __init__(self,
-                 optimizer,
-                 learning_rate,
-                 learning_rate_decay_fn=None,
-                 max_grad_norm=None):
+    def __init__(self, optimizer, learning_rate, learning_rate_decay_fn=None, max_grad_norm=None):
         """Initializes the controller.
 
-       Args:
-         optimizer: A ``torch.optim.Optimizer`` instance.
-         learning_rate: The initial learning rate.
-         learning_rate_decay_fn: An optional callable taking the current step
-           as argument and return a learning rate scaling factor.
-         max_grad_norm: Clip gradients to this global norm.
+        Args:
+          optimizer: A ``torch.optim.Optimizer`` instance.
+          learning_rate: The initial learning rate.
+          learning_rate_decay_fn: An optional callable taking the current step
+            as argument and return a learning rate scaling factor.
+          max_grad_norm: Clip gradients to this global norm.
         """
         self._optimizer = optimizer
         self._learning_rate = learning_rate
@@ -228,7 +226,7 @@ class Optimizer(object):
         self._scaler = None
 
     @classmethod
-    def from_opt(cls, model, opt, checkpoint=None):
+    def from_opt(cls, model, opt, scheduler, checkpoint=None):
         """Builds the optimizer from options.
 
         Args:
@@ -271,17 +269,21 @@ class Optimizer(object):
                 optim_state_dict = ckpt_state_dict
 
         optimizer = cls(
-            build_torch_optimizer(model, optim_opt),
+            build_torch_optimizer(model, optim_opt, scheduler),
             optim_opt.learning_rate,
             learning_rate_decay_fn=make_learning_rate_decay_fn(optim_opt),
-            max_grad_norm=optim_opt.max_grad_norm)
+            max_grad_norm=optim_opt.max_grad_norm,
+        )
+
         if opt.model_dtype == "fp16":
             if opt.optim == "fusedadam":
                 optimizer._fp16 = "legacy"
             else:
                 optimizer._fp16 = "amp"
                 from torch.cuda.amp import GradScaler
+
                 optimizer._scaler = GradScaler()
+
         if optim_state_dict:
             optimizer.load_state_dict(optim_state_dict)
         return optimizer
@@ -307,7 +309,7 @@ class Optimizer(object):
         return {
             'training_step': self._training_step,
             'decay_step': self._decay_step,
-            'optimizer': self._optimizer.state_dict()
+            'optimizer': self._optimizer.state_dict(),
         }
 
     def load_state_dict(self, state_dict):
@@ -335,7 +337,7 @@ class Optimizer(object):
         else:
             loss.backward()
 
-    def step(self):
+    def step(self, langsEnc=None, langsDec=None):
         """Update the model parameters based on current gradients.
 
         Optionally, will employ gradient modification or update learning
@@ -344,12 +346,13 @@ class Optimizer(object):
         learning_rate = self.learning_rate()
 
         if self.amp:
-            self._scaler.unscale_(self._optimizer)
+            dict_opts = self._optimizer.optimizers
+            for name in dict_opts:
+                self._scaler.unscale_(dict_opts[name])
         elif self._fp16 == "legacy":
             if hasattr(self._optimizer, "update_master_grads"):
                 self._optimizer.update_master_grads()
-            if hasattr(self._optimizer, "clip_master_grads") and \
-               self._max_grad_norm > 0:
+            if hasattr(self._optimizer, "clip_master_grads") and self._max_grad_norm > 0:
                 self._optimizer.clip_master_grads(self._max_grad_norm)
 
         for group in self._optimizer.param_groups:
@@ -358,20 +361,24 @@ class Optimizer(object):
                 clip_grad_norm_(group['params'], self._max_grad_norm)
 
         if self.amp:
-            # unscaled optimizer's gradients (already done therefore skip),
-            # skips optimizer.step() if gradients contain infs/NaNs.
-            self._scaler.step(self._optimizer)
+            dict_opts = self._optimizer.optimizers
+            for name in dict_opts:
+                self._scaler.step(dict_opts[name])
+
             # Updates the scale for next iteration.
             self._scaler.update()
         else:
-            self._optimizer.step()
+            dict_opts = self._optimizer.optimizers
+            for name in dict_opts:
+                dict_opts[name].step()
         self._decay_step += 1
         self._training_step += 1
+
 
 # Code below is an implementation of https://arxiv.org/pdf/1804.04235.pdf
 # inspired but modified from https://github.com/DeadAt0m/adafactor-pytorch
 
-
+"""
 class AdaFactor(torch.optim.Optimizer):
 
     def __init__(self, params, lr=None, beta1=0.9, beta2=0.999, eps1=1e-30,
@@ -540,6 +547,7 @@ class AdaFactor(torch.optim.Optimizer):
                     p.data.add_(-group['weight_decay'] * lr_t, p.data)
 
         return loss
+"""
 
 
 class FusedAdam(torch.optim.Optimizer):
@@ -571,23 +579,35 @@ class FusedAdam(torch.optim.Optimizer):
         https://openreview.net/forum?id=ryQu7f-RZ
     """
 
-    def __init__(self, params,
-                 lr=1e-3, bias_correction=True,
-                 betas=(0.9, 0.999), eps=1e-8, eps_inside_sqrt=False,
-                 weight_decay=0., max_grad_norm=0., amsgrad=False):
+    def __init__(
+        self,
+        params,
+        lr=1e-3,
+        bias_correction=True,
+        betas=(0.9, 0.999),
+        eps=1e-8,
+        eps_inside_sqrt=False,
+        weight_decay=0.0,
+        max_grad_norm=0.0,
+        amsgrad=False,
+    ):
         global fused_adam_cuda
         fused_adam_cuda = importlib.import_module("fused_adam_cuda")
 
         if amsgrad:
             raise RuntimeError('AMSGrad variant not supported.')
-        defaults = dict(lr=lr, bias_correction=bias_correction,
-                        betas=betas, eps=eps, weight_decay=weight_decay,
-                        max_grad_norm=max_grad_norm)
+        defaults = dict(
+            lr=lr,
+            bias_correction=bias_correction,
+            betas=betas,
+            eps=eps,
+            weight_decay=weight_decay,
+            max_grad_norm=max_grad_norm,
+        )
         super(FusedAdam, self).__init__(params, defaults)
         self.eps_mode = 0 if eps_inside_sqrt else 1
 
-    def step(self, closure=None, grads=None, output_params=None,
-             scale=1., grad_norms=None):
+    def step(self, closure=None, grads=None, output_params=None, scale=1.0, grad_norms=None):
         """Performs a single optimization step.
         Arguments:
             closure (callable, optional): A closure that reevaluates the model
@@ -607,7 +627,7 @@ class FusedAdam(torch.optim.Optimizer):
             loss = closure()
 
         if grads is None:
-            grads_group = [None]*len(self.param_groups)
+            grads_group = [None] * len(self.param_groups)
         # backward compatibility
         # assuming a list/generator of parameter means single group
         elif isinstance(grads, types.GeneratorType):
@@ -618,7 +638,7 @@ class FusedAdam(torch.optim.Optimizer):
             grads_group = grads
 
         if output_params is None:
-            output_params_group = [None]*len(self.param_groups)
+            output_params_group = [None] * len(self.param_groups)
         elif isinstance(output_params, types.GeneratorType):
             output_params_group = [output_params]
         elif type(output_params[0]) != list:
@@ -627,15 +647,15 @@ class FusedAdam(torch.optim.Optimizer):
             output_params_group = output_params
 
         if grad_norms is None:
-            grad_norms = [None]*len(self.param_groups)
+            grad_norms = [None] * len(self.param_groups)
 
-        for group, grads_this_group, output_params_this_group, \
-            grad_norm in zip(self.param_groups, grads_group,
-                             output_params_group, grad_norms):
+        for group, grads_this_group, output_params_this_group, grad_norm in zip(
+            self.param_groups, grads_group, output_params_group, grad_norms
+        ):
             if grads_this_group is None:
-                grads_this_group = [None]*len(group['params'])
+                grads_this_group = [None] * len(group['params'])
             if output_params_this_group is None:
-                output_params_this_group = [None]*len(group['params'])
+                output_params_this_group = [None] * len(group['params'])
 
             # compute combined scale factor for this group
             combined_scale = scale
@@ -647,9 +667,7 @@ class FusedAdam(torch.optim.Optimizer):
 
             bias_correction = 1 if group['bias_correction'] else 0
 
-            for p, grad, output_param in zip(group['params'],
-                                             grads_this_group,
-                                             output_params_this_group):
+            for p, grad, output_param in zip(group['params'], grads_this_group, output_params_this_group):
                 # note: p.grad should not ever be set for correct operation of
                 # mixed precision optimizer that sometimes sends None gradients
                 if p.grad is None and grad is None:
@@ -657,9 +675,11 @@ class FusedAdam(torch.optim.Optimizer):
                 if grad is None:
                     grad = p.grad.data
                 if grad.is_sparse:
-                    raise RuntimeError('FusedAdam does not support sparse \
+                    raise RuntimeError(
+                        'FusedAdam does not support sparse \
                                        gradients, please consider \
-                                       SparseAdam instead')
+                                       SparseAdam instead'
+                    )
 
                 state = self.state[p]
 
@@ -676,20 +696,210 @@ class FusedAdam(torch.optim.Optimizer):
 
                 state['step'] += 1
 
-                out_p = torch.tensor([], dtype=torch.float) if output_param \
-                    is None else output_param
-                fused_adam_cuda.adam(p.data,
-                                     out_p,
-                                     exp_avg,
-                                     exp_avg_sq,
-                                     grad,
-                                     group['lr'],
-                                     beta1,
-                                     beta2,
-                                     group['eps'],
-                                     combined_scale,
-                                     state['step'],
-                                     self.eps_mode,
-                                     bias_correction,
-                                     group['weight_decay'])
+                out_p = torch.tensor([], dtype=torch.float) if output_param is None else output_param
+                fused_adam_cuda.adam(
+                    p.data,
+                    out_p,
+                    exp_avg,
+                    exp_avg_sq,
+                    grad,
+                    group['lr'],
+                    beta1,
+                    beta2,
+                    group['eps'],
+                    combined_scale,
+                    state['step'],
+                    self.eps_mode,
+                    bias_correction,
+                    group['weight_decay'],
+                )
+        return loss
+
+
+class AdaFactorFairSeq(torch.optim.Optimizer):
+    """Implements Adafactor algorithm.
+
+    This implementation is based on:
+    `Adafactor: Adaptive Learning Rates with Sublinear Memory Cost`
+    (see https://arxiv.org/abs/1804.04235)
+
+    Note that this optimizer internally adjusts the learning rate
+    depending on the *scale_parameter*, *relative_step* and
+    *warmup_init* options. To use a manual (external) learning rate
+    schedule you should set `scale_parameter=False` and
+    `relative_step=False`.
+
+    Args:
+        params (iterable): iterable of parameters to optimize or dicts defining
+            parameter groups
+        lr (float, optional): external learning rate (default: None)
+        eps (tuple[float, float]): regularization constans for square gradient
+            and parameter scale respectively (default: (1e-30, 1e-3))
+        clip_threshold (float): threshold of root mean square of
+            final gradient update (default: 1.0)
+        decay_rate (float): coefficient used to compute running averages of square
+            gradient (default: -0.8)
+        beta1 (float): coefficient used for computing running averages of gradient
+            (default: None)
+        weight_decay (float, optional): weight decay (L2 penalty) (default: 0)
+        scale_parameter (bool): if True, learning rate is scaled by root mean square of
+            parameter (default: True)
+        relative_step (bool): if True, time-dependent learning rate is computed
+            instead of external learning rate (default: True)
+        warmup_init (bool): time-dependent learning rate computation depends on
+            whether warm-up initialization is being used (default: False)
+    """
+
+    def __init__(
+        self,
+        params,
+        lr=None,
+        eps=(1e-30, 1e-3),
+        clip_threshold=1.0,
+        decay_rate=-0.8,
+        beta1=None,
+        weight_decay=0.0,
+        scale_parameter=True,
+        relative_step=True,
+        warmup_init=False,
+    ):
+        if lr is not None and relative_step:
+            raise ValueError("Cannot combine manual lr and relative_step options")
+        if warmup_init and not relative_step:
+            raise ValueError("warmup_init requires relative_step=True")
+
+        defaults = dict(
+            lr=lr,
+            eps=eps,
+            clip_threshold=clip_threshold,
+            decay_rate=decay_rate,
+            beta1=beta1,
+            weight_decay=weight_decay,
+            scale_parameter=scale_parameter,
+            relative_step=relative_step,
+            warmup_init=warmup_init,
+        )
+        super(AdaFactorFairSeq, self).__init__(params, defaults)
+
+    @property
+    def supports_memory_efficient_fp16(self):
+        return True
+
+    @property
+    def supports_flat_params(self):
+        return False
+
+    def _get_lr(self, param_group, param_state):
+        rel_step_sz = param_group["lr"]
+        if param_group["relative_step"]:
+            min_step = 1e-6 * param_state["step"] if param_group["warmup_init"] else 1e-2
+            rel_step_sz = min(min_step, 1.0 / math.sqrt(param_state["step"]))
+        param_scale = 1.0
+        if param_group["scale_parameter"]:
+            param_scale = max(param_group["eps"][1], param_state["RMS"])
+        return param_scale * rel_step_sz
+
+    def _get_options(self, param_group, param_shape):
+        factored = len(param_shape) >= 2
+        use_first_moment = param_group["beta1"] is not None
+        return factored, use_first_moment
+
+    def _rms(self, tensor):
+        return tensor.norm(2) / (tensor.numel() ** 0.5)
+
+    def _approx_sq_grad(self, exp_avg_sq_row, exp_avg_sq_col):
+        r_factor = (exp_avg_sq_row / exp_avg_sq_row.mean(dim=-1, keepdim=True)).rsqrt_().unsqueeze(-1)
+        c_factor = exp_avg_sq_col.unsqueeze(-2).rsqrt()
+        return torch.mul(r_factor, c_factor)
+
+    def step(self, closure=None):
+        """Performs a single optimization step.
+
+        Args:
+            closure (callable, optional): A closure that reevaluates the model
+                and returns the loss.
+        """
+        loss = None
+        if closure is not None:
+            loss = closure()
+
+        for group in self.param_groups:
+            for p in group["params"]:
+                if p.grad is None:
+                    continue
+                grad = p.grad.data
+                if grad.dtype in {torch.float16, torch.bfloat16}:
+                    grad = grad.float()
+                if grad.is_sparse:
+                    raise RuntimeError("Adafactor does not support sparse gradients.")
+
+                state = self.state[p]
+                grad_shape = grad.shape
+
+                factored, use_first_moment = self._get_options(group, grad_shape)
+                # State Initialization
+                if len(state) == 0:
+                    state["step"] = 0
+
+                    if use_first_moment:
+                        # Exponential moving average of gradient values
+                        state["exp_avg"] = torch.zeros_like(grad)
+                    if factored:
+                        state["exp_avg_sq_row"] = torch.zeros(grad_shape[:-1]).to(grad)
+                        state["exp_avg_sq_col"] = torch.zeros(grad_shape[:-2] + grad_shape[-1:]).to(grad)
+                    else:
+                        state["exp_avg_sq"] = torch.zeros_like(grad)
+
+                    state["RMS"] = 0
+                else:
+                    if use_first_moment:
+                        state["exp_avg"] = state["exp_avg"].to(grad)
+                    if factored:
+                        state["exp_avg_sq_row"] = state["exp_avg_sq_row"].to(grad)
+                        state["exp_avg_sq_col"] = state["exp_avg_sq_col"].to(grad)
+                    else:
+                        state["exp_avg_sq"] = state["exp_avg_sq"].to(grad)
+
+                p_data_fp32 = p.data
+                if p.data.dtype in {torch.float16, torch.bfloat16}:
+                    p_data_fp32 = p_data_fp32.float()
+
+                state["step"] += 1
+                state["RMS"] = self._rms(p_data_fp32)
+                group["lr"] = self._get_lr(group, state)
+
+                beta2t = 1.0 - math.pow(state["step"], group["decay_rate"])
+                update = (grad**2) + group["eps"][0]
+                if factored:
+                    exp_avg_sq_row = state["exp_avg_sq_row"]
+                    exp_avg_sq_col = state["exp_avg_sq_col"]
+
+                    exp_avg_sq_row.mul_(beta2t).add_(update.mean(dim=-1), alpha=1.0 - beta2t)
+                    exp_avg_sq_col.mul_(beta2t).add_(update.mean(dim=-2), alpha=1.0 - beta2t)
+
+                    # Approximation of exponential moving average of square of gradient
+                    update = self._approx_sq_grad(exp_avg_sq_row, exp_avg_sq_col)
+                    update.mul_(grad)
+                else:
+                    exp_avg_sq = state["exp_avg_sq"]
+
+                    exp_avg_sq.mul_(beta2t).add_(update, alpha=1.0 - beta2t)
+                    update = exp_avg_sq.rsqrt().mul_(grad)
+
+                update.div_((self._rms(update) / group["clip_threshold"]).clamp_(min=1.0))
+                update.mul_(group["lr"])
+
+                if use_first_moment:
+                    exp_avg = state["exp_avg"]
+                    exp_avg.mul_(group["beta1"]).add_(update, alpha=1 - group["beta1"])
+                    update = exp_avg
+
+                if group["weight_decay"] != 0:
+                    p_data_fp32.add_(p_data_fp32, alpha=-group["weight_decay"] * group["lr"])
+
+                p_data_fp32.add_(-update)
+
+                if p.data.dtype in {torch.float16, torch.bfloat16}:
+                    p.data.copy_(p_data_fp32)
+
         return loss

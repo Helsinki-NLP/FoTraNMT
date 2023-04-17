@@ -1,0 +1,110 @@
+# Testing with 1 language (total 3 language pairs)
+# train_([a-z][a-z])-*\1  regex for matching only autoencoding tasks (and edit with multi-caret - thanks pycharm!)
+# Here I use all monolingual data (i.e. I also consider en-en)
+save_data: /scratch/project_2005099/data/opus/opus01-vocabs
+src_vocab:
+  'en': /scratch/project_2005099/data/opus/prepare_opus01_data_out/opus01.en-fr.vocab.onmt
+  'fr': /scratch/project_2005099/data/opus/prepare_opus01_data_out/opus01.en-fr.vocab.onmt
+tgt_vocab:
+  'en': /scratch/project_2005099/data/opus/prepare_opus01_data_out/opus01.en-fr.vocab.onmt
+  'fr': /scratch/project_2005099/data/opus/prepare_opus01_data_out/opus01.en-fr.vocab.onmt
+
+overwrite: False
+data:
+  train_en-fr:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_out/supervised/en-fr/opus.en-fr-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_out/supervised/en-fr/opus.en-fr-train.fr.sp
+    transforms: [filtertoolong]
+  train_en-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_out/supervised/en-fr/opus.en-fr-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_out/supervised/en-fr/opus.en-fr-train.en.sp
+    transforms: [filtertoolong, bart]
+  train_fr-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_out/supervised/en-fr/opus.en-fr-train.fr.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_out/supervised/en-fr/opus.en-fr-train.en.sp
+    transforms: [filtertoolong]
+  train_fr-fr:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_out/supervised/en-fr/opus.en-fr-train.fr.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_out/supervised/en-fr/opus.en-fr-train.fr.sp
+    transforms: [filtertoolong, bart]
+
+src_tgt: [
+    "en-fr", "en-en", "fr-en", "fr-fr"
+]
+
+# opus01, 1 node 1 gpu
+node_gpu: [
+    "0:0", "0:0", "0:0", "0:0"
+]
+
+save_model: /scratch/project_2005099/models/opus01/opus01.50.adaf.allmono
+
+#### Transform related opts:
+##### Subword
+#src_subword_model: /scratch/project_2005099/data/opus/prepare_opus12_data_out/opus12.model
+#tgt_subword_model: /scratch/project_2005099/data/opus/prepare_opus12_data_out/opus12.model
+## not sure oif I need to provide the subword vocabs...
+#src_subword_vocab: /scratch/project_2005099/data/opus/prepare_opus12_data_out/opus12.vocab
+#tgt_subword_vocab: /scratch/project_2005099/data/opus/prepare_opus12_data_out/opus12.vocab
+src_subword_type: sentencepiece
+tgt_subword_type: sentencepiece
+#src_subword_nbest: 1
+#src_subword_alpha: 0.0
+#tgt_subword_nbest: 1
+#tgt_subword_alpha: 0.0
+#### Filter
+src_seq_length: 200
+tgt_seq_length: 200
+#### Bart
+mask_ratio: 0.2
+replace_length: 1
+
+# silently ignore empty lines in the data
+skip_empty_level: silent
+
+#batch_size: 4096
+batch_size: 16384
+batch_type: tokens
+normalization: tokens
+valid_batch_size: 16384
+max_generator_batches: 2
+use_attention_bridge: true
+n_layers_ab: 1
+layer_type_ab: fixed-size
+hidden_ab_size: 4096
+#attention_heads: 8
+attention_heads: 50
+encoder_type: transformer
+decoder_type: transformer
+rnn_size: 512
+word_vec_size: 512
+transformer_ff: 2048
+heads: 8
+enc_layers: 6
+dec_layers: 6
+dropout: 0.1
+label_smoothing: 0.1
+param_init: 0.0
+param_init_glorot: true
+position_encoding: true
+train_steps: 100000
+#train_steps: 50
+valid_steps: 500000
+#valid_steps: 10
+warmup_steps: 30000
+#warmup_steps: 40
+report_every: 100
+#report_every: 5
+save_checkpoint_steps: 5000
+keep_checkpoint: 5
+accum_count: 1
+optim: adafactor
+decay_method: none
+learning_rate: 3.0
+max_grad_norm: 0.0
+seed: 3435
+model_type: text
+#save_all_gpus: true
+
+world_size: 1
+gpu_ranks: [0]

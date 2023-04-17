@@ -1,0 +1,1221 @@
+# opus72: 72 languages (total 216 language pairs)
+# train_([a-z][a-z])-*\1  regex for matching only autoencoding tasks (and edit with multi-caret - thanks pycharm!)
+save_data: /scratch/project_2005099/data/opus/opus72-vocabs
+src_vocab:
+  'en': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.en.vocab.onmt
+  'ar': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.ar.vocab.onmt
+  'fr': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.fr.vocab.onmt
+  'zh': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.zh.vocab.onmt
+  'de': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.de.vocab.onmt
+  'nl': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.nl.vocab.onmt
+  'ru': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.ru.vocab.onmt
+  'tr': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.tr.vocab.onmt
+  'vi': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.vi.vocab.onmt
+  'th': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.th.vocab.onmt
+  'es': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.es.vocab.onmt
+  'el': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.el.vocab.onmt
+  'bg': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.bg.vocab.onmt
+  'he': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.he.vocab.onmt
+  'fi': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.fi.vocab.onmt
+  'ja': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.ja.vocab.onmt
+  'sv': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.sv.vocab.onmt
+  'fa': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.fa.vocab.onmt
+  'mk': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.mk.vocab.onmt
+  'eu': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.eu.vocab.onmt
+  'id': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.id.vocab.onmt
+  'bn': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.bn.vocab.onmt
+  'ko': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.ko.vocab.onmt
+  'it': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.it.vocab.onmt
+  'lv': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.lv.vocab.onmt
+  'mt': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.mt.vocab.onmt
+  'et': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.et.vocab.onmt
+  'ro': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.ro.vocab.onmt
+  'bs': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.bs.vocab.onmt
+  'sr': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.sr.vocab.onmt
+  'is': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.is.vocab.onmt
+  'uk': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.uk.vocab.onmt
+  'hu': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.hu.vocab.onmt
+  'lt': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.lt.vocab.onmt
+  'cs': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.cs.vocab.onmt
+  'sk': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.sk.vocab.onmt
+  'sq': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.sq.vocab.onmt
+  'ms': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.ms.vocab.onmt
+  'da': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.da.vocab.onmt
+  'si': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.si.vocab.onmt
+  'no': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.no.vocab.onmt
+  'pt': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.pt.vocab.onmt
+  'ml': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.ml.vocab.onmt
+  'pl': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.pl.vocab.onmt
+  'hr': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.hr.vocab.onmt
+  'ur': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.ur.vocab.onmt
+  'ca': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.ca.vocab.onmt
+  'sl': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.sl.vocab.onmt
+  'mg': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.mg.vocab.onmt
+  'hi': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.hi.vocab.onmt
+  'gl': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.gl.vocab.onmt
+  'nn': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.nn.vocab.onmt
+  'xh': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.xh.vocab.onmt
+  'ne': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.ne.vocab.onmt
+  'ka': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.ka.vocab.onmt
+  'eo': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.eo.vocab.onmt
+  'gu': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.gu.vocab.onmt
+  'ga': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.ga.vocab.onmt
+  'cy': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.cy.vocab.onmt
+  'af': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.af.vocab.onmt
+  'sh': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.sh.vocab.onmt
+  'az': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.az.vocab.onmt
+  'ta': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.ta.vocab.onmt
+  'tg': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.tg.vocab.onmt
+  'rw': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.rw.vocab.onmt
+  'uz': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.uz.vocab.onmt
+  'br': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.br.vocab.onmt
+  'ku': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.ku.vocab.onmt
+  'nb': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.nb.vocab.onmt
+  'as': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.as.vocab.onmt
+  'km': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.km.vocab.onmt
+  'pa': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.pa.vocab.onmt
+  'wa': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.wa.vocab.onmt
+tgt_vocab:
+  'en': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.en.vocab.onmt
+  'ar': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.ar.vocab.onmt
+  'fr': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.fr.vocab.onmt
+  'zh': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.zh.vocab.onmt
+  'de': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.de.vocab.onmt
+  'nl': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.nl.vocab.onmt
+  'ru': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.ru.vocab.onmt
+  'tr': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.tr.vocab.onmt
+  'vi': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.vi.vocab.onmt
+  'th': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.th.vocab.onmt
+  'es': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.es.vocab.onmt
+  'el': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.el.vocab.onmt
+  'bg': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.bg.vocab.onmt
+  'he': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.he.vocab.onmt
+  'fi': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.fi.vocab.onmt
+  'ja': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.ja.vocab.onmt
+  'sv': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.sv.vocab.onmt
+  'fa': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.fa.vocab.onmt
+  'mk': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.mk.vocab.onmt
+  'eu': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.eu.vocab.onmt
+  'id': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.id.vocab.onmt
+  'bn': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.bn.vocab.onmt
+  'ko': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.ko.vocab.onmt
+  'it': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.it.vocab.onmt
+  'lv': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.lv.vocab.onmt
+  'mt': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.mt.vocab.onmt
+  'et': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.et.vocab.onmt
+  'ro': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.ro.vocab.onmt
+  'bs': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.bs.vocab.onmt
+  'sr': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.sr.vocab.onmt
+  'is': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.is.vocab.onmt
+  'uk': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.uk.vocab.onmt
+  'hu': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.hu.vocab.onmt
+  'lt': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.lt.vocab.onmt
+  'cs': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.cs.vocab.onmt
+  'sk': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.sk.vocab.onmt
+  'sq': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.sq.vocab.onmt
+  'ms': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.ms.vocab.onmt
+  'da': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.da.vocab.onmt
+  'si': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.si.vocab.onmt
+  'no': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.no.vocab.onmt
+  'pt': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.pt.vocab.onmt
+  'ml': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.ml.vocab.onmt
+  'pl': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.pl.vocab.onmt
+  'hr': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.hr.vocab.onmt
+  'ur': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.ur.vocab.onmt
+  'ca': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.ca.vocab.onmt
+  'sl': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.sl.vocab.onmt
+  'mg': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.mg.vocab.onmt
+  'hi': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.hi.vocab.onmt
+  'gl': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.gl.vocab.onmt
+  'nn': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.nn.vocab.onmt
+  'xh': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.xh.vocab.onmt
+  'ne': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.ne.vocab.onmt
+  'ka': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.ka.vocab.onmt
+  'eo': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.eo.vocab.onmt
+  'gu': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.gu.vocab.onmt
+  'ga': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.ga.vocab.onmt
+  'cy': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.cy.vocab.onmt
+  'af': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.af.vocab.onmt
+  'sh': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.sh.vocab.onmt
+  'az': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.az.vocab.onmt
+  'ta': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.ta.vocab.onmt
+  'tg': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.tg.vocab.onmt
+  'rw': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.rw.vocab.onmt
+  'uz': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.uz.vocab.onmt
+  'br': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.br.vocab.onmt
+  'ku': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.ku.vocab.onmt
+  'nb': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.nb.vocab.onmt
+  'as': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.as.vocab.onmt
+  'km': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.km.vocab.onmt
+  'pa': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.pa.vocab.onmt
+  'wa': /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/opusTC.wa.vocab.onmt
+
+overwrite: False
+data:
+# GPU 0:0
+  train_en-ar:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/ar-en/opus.ar-en-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/ar-en/opus.ar-en-train.ar.sp
+    transforms: [filtertoolong]
+  train_ar-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/ar-en/opus.ar-en-train.ar.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/ar-en/opus.ar-en-train.en.sp
+    transforms: [filtertoolong]
+  train_ar-ar:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/ar-en/opus.ar-en-train.ar.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/ar-en/opus.ar-en-train.ar.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-hi:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-hi/opus.en-hi-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-hi/opus.en-hi-train.hi.sp
+    transforms: [filtertoolong]
+  train_hi-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-hi/opus.en-hi-train.hi.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-hi/opus.en-hi-train.en.sp
+    transforms: [filtertoolong]
+  train_hi-hi:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-hi/opus.en-hi-train.hi.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-hi/opus.en-hi-train.hi.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-az:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/az-en/opus.az-en-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/az-en/opus.az-en-train.az.sp
+    transforms: [filtertoolong]
+  train_az-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/az-en/opus.az-en-train.az.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/az-en/opus.az-en-train.en.sp
+    transforms: [filtertoolong]
+  train_az-az:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/az-en/opus.az-en-train.az.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/az-en/opus.az-en-train.az.sp
+    transforms: [filtertoolong, bart]
+
+# GPU 0:1
+  train_en-de:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/de-en/opus.de-en-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/de-en/opus.de-en-train.de.sp
+    transforms: [filtertoolong]
+  train_de-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/de-en/opus.de-en-train.de.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/de-en/opus.de-en-train.en.sp
+    transforms: [filtertoolong]
+  train_de-de:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/de-en/opus.de-en-train.de.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/de-en/opus.de-en-train.de.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-gl:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-gl/opus.en-gl-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-gl/opus.en-gl-train.gl.sp
+    transforms: [filtertoolong]
+  train_gl-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-gl/opus.en-gl-train.gl.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-gl/opus.en-gl-train.en.sp
+    transforms: [filtertoolong]
+  train_gl-gl:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-gl/opus.en-gl-train.gl.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-gl/opus.en-gl-train.gl.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-ta:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ta/opus.en-ta-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ta/opus.en-ta-train.ta.sp
+    transforms: [filtertoolong]
+  train_ta-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ta/opus.en-ta-train.ta.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ta/opus.en-ta-train.en.sp
+    transforms: [filtertoolong]
+  train_ta-ta:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ta/opus.en-ta-train.ta.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ta/opus.en-ta-train.ta.sp
+    transforms: [filtertoolong, bart]
+
+# GPU 0:2
+  train_en-tr:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-tr/opus.en-tr-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-tr/opus.en-tr-train.tr.sp
+    transforms: [filtertoolong]
+  train_tr-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-tr/opus.en-tr-train.tr.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-tr/opus.en-tr-train.en.sp
+    transforms: [filtertoolong]
+  train_tr-tr:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-tr/opus.en-tr-train.tr.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-tr/opus.en-tr-train.tr.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-nn:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-nn/opus.en-nn-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-nn/opus.en-nn-train.nn.sp
+    transforms: [filtertoolong]
+  train_nn-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-nn/opus.en-nn-train.nn.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-nn/opus.en-nn-train.en.sp
+    transforms: [filtertoolong]
+  train_nn-nn:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-nn/opus.en-nn-train.nn.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-nn/opus.en-nn-train.nn.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-tg:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-tg/opus.en-tg-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-tg/opus.en-tg-train.tg.sp
+    transforms: [filtertoolong]
+  train_tg-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-tg/opus.en-tg-train.tg.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-tg/opus.en-tg-train.en.sp
+    transforms: [filtertoolong]
+  train_tg-tg:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-tg/opus.en-tg-train.tg.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-tg/opus.en-tg-train.tg.sp
+    transforms: [filtertoolong, bart]
+
+# GPU 0:3
+  train_en-es:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-es/opus.en-es-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-es/opus.en-es-train.es.sp
+    transforms: [filtertoolong]
+  train_es-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-es/opus.en-es-train.es.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-es/opus.en-es-train.en.sp
+    transforms: [filtertoolong]
+  train_es-es:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-es/opus.en-es-train.es.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-es/opus.en-es-train.es.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-xh:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-xh/opus.en-xh-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-xh/opus.en-xh-train.xh.sp
+    transforms: [filtertoolong]
+  train_xh-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-xh/opus.en-xh-train.xh.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-xh/opus.en-xh-train.en.sp
+    transforms: [filtertoolong]
+  train_xh-xh:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-xh/opus.en-xh-train.xh.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-xh/opus.en-xh-train.xh.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-rw:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-rw/opus.en-rw-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-rw/opus.en-rw-train.rw.sp
+    transforms: [filtertoolong]
+  train_rw-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-rw/opus.en-rw-train.rw.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-rw/opus.en-rw-train.en.sp
+    transforms: [filtertoolong]
+  train_rw-rw:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-rw/opus.en-rw-train.rw.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-rw/opus.en-rw-train.rw.sp
+    transforms: [filtertoolong, bart]
+
+# GPU 1:0
+  train_en-he:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-he/opus.en-he-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-he/opus.en-he-train.he.sp
+    transforms: [filtertoolong]
+  train_he-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-he/opus.en-he-train.he.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-he/opus.en-he-train.en.sp
+    transforms: [filtertoolong]
+  train_he-he:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-he/opus.en-he-train.he.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-he/opus.en-he-train.he.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-fi:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-fi/opus.en-fi-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-fi/opus.en-fi-train.fi.sp
+    transforms: [filtertoolong]
+  train_fi-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-fi/opus.en-fi-train.fi.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-fi/opus.en-fi-train.en.sp
+    transforms: [filtertoolong]
+  train_fi-fi:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-fi/opus.en-fi-train.fi.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-fi/opus.en-fi-train.fi.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-ne:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ne/opus.en-ne-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ne/opus.en-ne-train.ne.sp
+    transforms: [filtertoolong]
+  train_ne-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ne/opus.en-ne-train.ne.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ne/opus.en-ne-train.en.sp
+    transforms: [filtertoolong]
+  train_ne-ne:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ne/opus.en-ne-train.ne.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ne/opus.en-ne-train.ne.sp
+    transforms: [filtertoolong, bart]
+
+# GPU 1:1
+  train_en-sv:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sv/opus.en-sv-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sv/opus.en-sv-train.sv.sp
+    transforms: [filtertoolong]
+  train_sv-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sv/opus.en-sv-train.sv.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sv/opus.en-sv-train.en.sp
+    transforms: [filtertoolong]
+  train_sv-sv:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sv/opus.en-sv-train.sv.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sv/opus.en-sv-train.sv.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-fa:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-fa/opus.en-fa-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-fa/opus.en-fa-train.fa.sp
+    transforms: [filtertoolong]
+  train_fa-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-fa/opus.en-fa-train.fa.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-fa/opus.en-fa-train.en.sp
+    transforms: [filtertoolong]
+  train_fa-fa:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-fa/opus.en-fa-train.fa.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-fa/opus.en-fa-train.fa.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-ka:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ka/opus.en-ka-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ka/opus.en-ka-train.ka.sp
+    transforms: [filtertoolong]
+  train_ka-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ka/opus.en-ka-train.ka.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ka/opus.en-ka-train.en.sp
+    transforms: [filtertoolong]
+  train_ka-ka:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ka/opus.en-ka-train.ka.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ka/opus.en-ka-train.ka.sp
+    transforms: [filtertoolong, bart]
+
+# GPU 1:2
+  train_en-eu:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-eu/opus.en-eu-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-eu/opus.en-eu-train.eu.sp
+    transforms: [filtertoolong]
+  train_eu-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-eu/opus.en-eu-train.eu.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-eu/opus.en-eu-train.en.sp
+    transforms: [filtertoolong]
+  train_eu-eu:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-eu/opus.en-eu-train.eu.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-eu/opus.en-eu-train.eu.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-id:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-id/opus.en-id-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-id/opus.en-id-train.id.sp
+    transforms: [filtertoolong]
+  train_id-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-id/opus.en-id-train.id.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-id/opus.en-id-train.en.sp
+    transforms: [filtertoolong]
+  train_id-id:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-id/opus.en-id-train.id.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-id/opus.en-id-train.id.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-eo:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-eo/opus.en-eo-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-eo/opus.en-eo-train.eo.sp
+    transforms: [filtertoolong]
+  train_eo-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-eo/opus.en-eo-train.eo.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-eo/opus.en-eo-train.en.sp
+    transforms: [filtertoolong]
+  train_eo-eo:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-eo/opus.en-eo-train.eo.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-eo/opus.en-eo-train.eo.sp
+    transforms: [filtertoolong, bart]
+
+# GPU 1:3
+  train_en-ko:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ko/opus.en-ko-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ko/opus.en-ko-train.ko.sp
+    transforms: [filtertoolong]
+  train_ko-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ko/opus.en-ko-train.ko.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ko/opus.en-ko-train.en.sp
+    transforms: [filtertoolong]
+  train_ko-ko:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ko/opus.en-ko-train.ko.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ko/opus.en-ko-train.ko.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-it:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-it/opus.en-it-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-it/opus.en-it-train.it.sp
+    transforms: [filtertoolong]
+  train_it-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-it/opus.en-it-train.it.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-it/opus.en-it-train.en.sp
+    transforms: [filtertoolong]
+  train_it-it:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-it/opus.en-it-train.it.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-it/opus.en-it-train.it.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-gu:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-gu/opus.en-gu-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-gu/opus.en-gu-train.gu.sp
+    transforms: [filtertoolong]
+  train_gu-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-gu/opus.en-gu-train.gu.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-gu/opus.en-gu-train.en.sp
+    transforms: [filtertoolong]
+  train_gu-gu:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-gu/opus.en-gu-train.gu.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-gu/opus.en-gu-train.gu.sp
+    transforms: [filtertoolong, bart]
+
+# GPU 2:0
+  train_en-mt:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-mt/opus.en-mt-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-mt/opus.en-mt-train.mt.sp
+    transforms: [filtertoolong]
+  train_mt-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-mt/opus.en-mt-train.mt.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-mt/opus.en-mt-train.en.sp
+    transforms: [filtertoolong]
+  train_mt-mt:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-mt/opus.en-mt-train.mt.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-mt/opus.en-mt-train.mt.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-et:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-et/opus.en-et-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-et/opus.en-et-train.et.sp
+    transforms: [filtertoolong]
+  train_et-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-et/opus.en-et-train.et.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-et/opus.en-et-train.en.sp
+    transforms: [filtertoolong]
+  train_et-et:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-et/opus.en-et-train.et.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-et/opus.en-et-train.et.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-ga:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ga/opus.en-ga-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ga/opus.en-ga-train.ga.sp
+    transforms: [filtertoolong]
+  train_ga-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ga/opus.en-ga-train.ga.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ga/opus.en-ga-train.en.sp
+    transforms: [filtertoolong]
+  train_ga-ga:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ga/opus.en-ga-train.ga.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ga/opus.en-ga-train.ga.sp
+    transforms: [filtertoolong, bart]
+
+# GPU 2:1
+  train_en-bs:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/bs-en/opus.bs-en-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/bs-en/opus.bs-en-train.bs.sp
+    transforms: [filtertoolong]
+  train_bs-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/bs-en/opus.bs-en-train.bs.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/bs-en/opus.bs-en-train.en.sp
+    transforms: [filtertoolong]
+  train_bs-bs:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/bs-en/opus.bs-en-train.bs.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/bs-en/opus.bs-en-train.bs.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-sr:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sr/opus.en-sr-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sr/opus.en-sr-train.sr.sp
+    transforms: [filtertoolong]
+  train_sr-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sr/opus.en-sr-train.sr.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sr/opus.en-sr-train.en.sp
+    transforms: [filtertoolong]
+  train_sr-sr:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sr/opus.en-sr-train.sr.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sr/opus.en-sr-train.sr.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-cy:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/cy-en/opus.cy-en-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/cy-en/opus.cy-en-train.cy.sp
+    transforms: [filtertoolong]
+  train_cy-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/cy-en/opus.cy-en-train.cy.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/cy-en/opus.cy-en-train.en.sp
+    transforms: [filtertoolong]
+  train_cy-cy:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/cy-en/opus.cy-en-train.cy.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/cy-en/opus.cy-en-train.cy.sp
+    transforms: [filtertoolong, bart]
+
+# GPU 2:2
+  train_en-uk:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-uk/opus.en-uk-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-uk/opus.en-uk-train.uk.sp
+    transforms: [filtertoolong]
+  train_uk-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-uk/opus.en-uk-train.uk.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-uk/opus.en-uk-train.en.sp
+    transforms: [filtertoolong]
+  train_uk-uk:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-uk/opus.en-uk-train.uk.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-uk/opus.en-uk-train.uk.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-hu:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-hu/opus.en-hu-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-hu/opus.en-hu-train.hu.sp
+    transforms: [filtertoolong]
+  train_hu-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-hu/opus.en-hu-train.hu.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-hu/opus.en-hu-train.en.sp
+    transforms: [filtertoolong]
+  train_hu-hu:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-hu/opus.en-hu-train.hu.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-hu/opus.en-hu-train.hu.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-af:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/af-en/opus.af-en-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/af-en/opus.af-en-train.af.sp
+    transforms: [filtertoolong]
+  train_af-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/af-en/opus.af-en-train.af.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/af-en/opus.af-en-train.en.sp
+    transforms: [filtertoolong]
+  train_af-af:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/af-en/opus.af-en-train.af.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/af-en/opus.af-en-train.af.sp
+    transforms: [filtertoolong, bart]
+
+# GPU 2:3
+  train_en-cs:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/cs-en/opus.cs-en-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/cs-en/opus.cs-en-train.cs.sp
+    transforms: [filtertoolong]
+  train_cs-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/cs-en/opus.cs-en-train.cs.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/cs-en/opus.cs-en-train.en.sp
+    transforms: [filtertoolong]
+  train_cs-cs:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/cs-en/opus.cs-en-train.cs.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/cs-en/opus.cs-en-train.cs.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-sk:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sk/opus.en-sk-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sk/opus.en-sk-train.sk.sp
+    transforms: [filtertoolong]
+  train_sk-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sk/opus.en-sk-train.sk.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sk/opus.en-sk-train.en.sp
+    transforms: [filtertoolong]
+  train_sk-sk:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sk/opus.en-sk-train.sk.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sk/opus.en-sk-train.sk.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-sh:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sh/opus.en-sh-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sh/opus.en-sh-train.sh.sp
+    transforms: [filtertoolong]
+  train_sh-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sh/opus.en-sh-train.sh.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sh/opus.en-sh-train.en.sp
+    transforms: [filtertoolong]
+  train_sh-sh:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sh/opus.en-sh-train.sh.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sh/opus.en-sh-train.sh.sp
+    transforms: [filtertoolong, bart]
+
+# GPU 3:0
+  train_en-ms:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ms/opus.en-ms-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ms/opus.en-ms-train.ms.sp
+    transforms: [filtertoolong]
+  train_ms-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ms/opus.en-ms-train.ms.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ms/opus.en-ms-train.en.sp
+    transforms: [filtertoolong]
+  train_ms-ms:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ms/opus.en-ms-train.ms.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ms/opus.en-ms-train.ms.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-da:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/da-en/opus.da-en-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/da-en/opus.da-en-train.da.sp
+    transforms: [filtertoolong]
+  train_da-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/da-en/opus.da-en-train.da.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/da-en/opus.da-en-train.en.sp
+    transforms: [filtertoolong]
+  train_da-da:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/da-en/opus.da-en-train.da.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/da-en/opus.da-en-train.da.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-si:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-si/opus.en-si-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-si/opus.en-si-train.si.sp
+    transforms: [filtertoolong]
+  train_si-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-si/opus.en-si-train.si.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-si/opus.en-si-train.en.sp
+    transforms: [filtertoolong]
+  train_si-si:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-si/opus.en-si-train.si.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-si/opus.en-si-train.si.sp
+    transforms: [filtertoolong, bart]
+
+# GPU 3:1
+  train_en-no:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-no/opus.en-no-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-no/opus.en-no-train.no.sp
+    transforms: [filtertoolong]
+  train_no-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-no/opus.en-no-train.no.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-no/opus.en-no-train.en.sp
+    transforms: [filtertoolong]
+  train_no-no:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-no/opus.en-no-train.no.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-no/opus.en-no-train.no.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-pt:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-pt/opus.en-pt-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-pt/opus.en-pt-train.pt.sp
+    transforms: [filtertoolong]
+  train_pt-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-pt/opus.en-pt-train.pt.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-pt/opus.en-pt-train.en.sp
+    transforms: [filtertoolong]
+  train_pt-pt:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-pt/opus.en-pt-train.pt.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-pt/opus.en-pt-train.pt.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-ml:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ml/opus.en-ml-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ml/opus.en-ml-train.ml.sp
+    transforms: [filtertoolong]
+  train_ml-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ml/opus.en-ml-train.ml.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ml/opus.en-ml-train.en.sp
+    transforms: [filtertoolong]
+  train_ml-ml:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ml/opus.en-ml-train.ml.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ml/opus.en-ml-train.ml.sp
+    transforms: [filtertoolong, bart]
+
+# GPU 3:2
+  train_en-pl:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-pl/opus.en-pl-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-pl/opus.en-pl-train.pl.sp
+    transforms: [filtertoolong]
+  train_pl-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-pl/opus.en-pl-train.pl.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-pl/opus.en-pl-train.en.sp
+    transforms: [filtertoolong]
+  train_pl-pl:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-pl/opus.en-pl-train.pl.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-pl/opus.en-pl-train.pl.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-hr:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-hr/opus.en-hr-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-hr/opus.en-hr-train.hr.sp
+    transforms: [filtertoolong]
+  train_hr-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-hr/opus.en-hr-train.hr.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-hr/opus.en-hr-train.en.sp
+    transforms: [filtertoolong]
+  train_hr-hr:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-hr/opus.en-hr-train.hr.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-hr/opus.en-hr-train.hr.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-ur:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ur/opus.en-ur-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ur/opus.en-ur-train.ur.sp
+    transforms: [filtertoolong]
+  train_ur-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ur/opus.en-ur-train.ur.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ur/opus.en-ur-train.en.sp
+    transforms: [filtertoolong]
+  train_ur-ur:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ur/opus.en-ur-train.ur.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ur/opus.en-ur-train.ur.sp
+    transforms: [filtertoolong, bart]
+
+# GPU 3:3
+  train_en-ca:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/ca-en/opus.ca-en-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/ca-en/opus.ca-en-train.ca.sp
+    transforms: [filtertoolong]
+  train_ca-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/ca-en/opus.ca-en-train.ca.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/ca-en/opus.ca-en-train.en.sp
+    transforms: [filtertoolong]
+  train_ca-ca:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/ca-en/opus.ca-en-train.ca.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/ca-en/opus.ca-en-train.ca.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-sl:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sl/opus.en-sl-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sl/opus.en-sl-train.sl.sp
+    transforms: [filtertoolong]
+  train_sl-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sl/opus.en-sl-train.sl.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sl/opus.en-sl-train.en.sp
+    transforms: [filtertoolong]
+  train_sl-sl:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sl/opus.en-sl-train.sl.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sl/opus.en-sl-train.sl.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-mg:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-mg/opus.en-mg-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-mg/opus.en-mg-train.mg.sp
+    transforms: [filtertoolong]
+  train_mg-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-mg/opus.en-mg-train.mg.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-mg/opus.en-mg-train.en.sp
+    transforms: [filtertoolong]
+  train_mg-mg:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-mg/opus.en-mg-train.mg.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-mg/opus.en-mg-train.mg.sp
+    transforms: [filtertoolong, bart]
+
+# GPU 4:0
+  train_en-zh:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-zh/opus.en-zh-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-zh/opus.en-zh-train.zh.sp
+    transforms: [filtertoolong]
+  train_zh-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-zh/opus.en-zh-train.zh.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-zh/opus.en-zh-train.en.sp
+    transforms: [filtertoolong]
+  train_zh-zh:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-zh/opus.en-zh-train.zh.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-zh/opus.en-zh-train.zh.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-ru:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ru/opus.en-ru-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ru/opus.en-ru-train.ru.sp
+    transforms: [ filtertoolong ]
+  train_ru-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ru/opus.en-ru-train.ru.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ru/opus.en-ru-train.en.sp
+    transforms: [ filtertoolong ]
+  train_ru-ru:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ru/opus.en-ru-train.ru.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ru/opus.en-ru-train.ru.sp
+    transforms: [ filtertoolong, bart ]
+
+  train_en-as:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/as-en/opus.as-en-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/as-en/opus.as-en-train.as.sp
+    transforms: [filtertoolong]
+  train_as-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/as-en/opus.as-en-train.as.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/as-en/opus.as-en-train.en.sp
+    transforms: [filtertoolong]
+  train_as-as:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/as-en/opus.as-en-train.as.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/as-en/opus.as-en-train.as.sp
+    transforms: [filtertoolong, bart]
+
+# GPU 4:1
+  train_en-bg:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/bg-en/opus.bg-en-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/bg-en/opus.bg-en-train.bg.sp
+    transforms: [filtertoolong]
+  train_bg-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/bg-en/opus.bg-en-train.bg.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/bg-en/opus.bg-en-train.en.sp
+    transforms: [filtertoolong]
+  train_bg-bg:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/bg-en/opus.bg-en-train.bg.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/bg-en/opus.bg-en-train.bg.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-ja:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ja/opus.en-ja-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ja/opus.en-ja-train.ja.sp
+    transforms: [filtertoolong]
+  train_ja-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ja/opus.en-ja-train.ja.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ja/opus.en-ja-train.en.sp
+    transforms: [filtertoolong]
+  train_ja-ja:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ja/opus.en-ja-train.ja.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ja/opus.en-ja-train.ja.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-km:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-km/opus.en-km-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-km/opus.en-km-train.km.sp
+    transforms: [filtertoolong]
+  train_km-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-km/opus.en-km-train.km.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-km/opus.en-km-train.en.sp
+    transforms: [filtertoolong]
+  train_km-km:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-km/opus.en-km-train.km.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-km/opus.en-km-train.km.sp
+    transforms: [filtertoolong, bart]
+
+# GPU 4:2
+  train_en-bn:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/bn-en/opus.bn-en-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/bn-en/opus.bn-en-train.bn.sp
+    transforms: [filtertoolong]
+  train_bn-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/bn-en/opus.bn-en-train.bn.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/bn-en/opus.bn-en-train.en.sp
+    transforms: [filtertoolong]
+  train_bn-bn:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/bn-en/opus.bn-en-train.bn.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/bn-en/opus.bn-en-train.bn.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-lv:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-lv/opus.en-lv-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-lv/opus.en-lv-train.lv.sp
+    transforms: [filtertoolong]
+  train_lv-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-lv/opus.en-lv-train.lv.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-lv/opus.en-lv-train.en.sp
+    transforms: [filtertoolong]
+  train_lv-lv:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-lv/opus.en-lv-train.lv.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-lv/opus.en-lv-train.lv.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-pa:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-pa/opus.en-pa-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-pa/opus.en-pa-train.pa.sp
+    transforms: [filtertoolong]
+  train_pa-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-pa/opus.en-pa-train.pa.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-pa/opus.en-pa-train.en.sp
+    transforms: [filtertoolong]
+  train_pa-pa:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-pa/opus.en-pa-train.pa.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-pa/opus.en-pa-train.pa.sp
+    transforms: [filtertoolong, bart]
+
+# GPU 4:3
+  train_en-is:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-is/opus.en-is-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-is/opus.en-is-train.is.sp
+    transforms: [filtertoolong]
+  train_is-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-is/opus.en-is-train.is.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-is/opus.en-is-train.en.sp
+    transforms: [filtertoolong]
+  train_is-is:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-is/opus.en-is-train.is.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-is/opus.en-is-train.is.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-lt:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-lt/opus.en-lt-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-lt/opus.en-lt-train.lt.sp
+    transforms: [filtertoolong]
+  train_lt-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-lt/opus.en-lt-train.lt.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-lt/opus.en-lt-train.en.sp
+    transforms: [filtertoolong]
+  train_lt-lt:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-lt/opus.en-lt-train.lt.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-lt/opus.en-lt-train.lt.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-wa:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-wa/opus.en-wa-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-wa/opus.en-wa-train.wa.sp
+    transforms: [filtertoolong]
+  train_wa-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-wa/opus.en-wa-train.wa.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-wa/opus.en-wa-train.en.sp
+    transforms: [filtertoolong]
+  train_wa-wa:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-wa/opus.en-wa-train.wa.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-wa/opus.en-wa-train.wa.sp
+    transforms: [filtertoolong, bart]
+
+# GPU 5:0
+  train_en-th:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-th/opus.en-th-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-th/opus.en-th-train.th.sp
+    transforms: [filtertoolong]
+  train_th-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-th/opus.en-th-train.th.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-th/opus.en-th-train.en.sp
+    transforms: [filtertoolong]
+  train_th-th:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-th/opus.en-th-train.th.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-th/opus.en-th-train.th.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-fr:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-fr/opus.en-fr-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-fr/opus.en-fr-train.fr.sp
+    transforms: [filtertoolong]
+  train_fr-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-fr/opus.en-fr-train.fr.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-fr/opus.en-fr-train.en.sp
+    transforms: [filtertoolong]
+  train_fr-fr:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-fr/opus.en-fr-train.fr.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-fr/opus.en-fr-train.fr.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-uz:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-uz/opus.en-uz-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-uz/opus.en-uz-train.uz.sp
+    transforms: [filtertoolong]
+  train_uz-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-uz/opus.en-uz-train.uz.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-uz/opus.en-uz-train.en.sp
+    transforms: [filtertoolong]
+  train_uz-uz:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-uz/opus.en-uz-train.uz.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-uz/opus.en-uz-train.uz.sp
+    transforms: [filtertoolong, bart]
+
+# GPU 5:1
+  train_en-mk:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-mk/opus.en-mk-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-mk/opus.en-mk-train.mk.sp
+    transforms: [filtertoolong]
+  train_mk-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-mk/opus.en-mk-train.mk.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-mk/opus.en-mk-train.en.sp
+    transforms: [filtertoolong]
+  train_mk-mk:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-mk/opus.en-mk-train.mk.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-mk/opus.en-mk-train.mk.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-nl:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-nl/opus.en-nl-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-nl/opus.en-nl-train.nl.sp
+    transforms: [filtertoolong]
+  train_nl-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-nl/opus.en-nl-train.nl.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-nl/opus.en-nl-train.en.sp
+    transforms: [filtertoolong]
+  train_nl-nl:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-nl/opus.en-nl-train.nl.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-nl/opus.en-nl-train.nl.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-br:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/br-en/opus.br-en-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/br-en/opus.br-en-train.br.sp
+    transforms: [filtertoolong]
+  train_br-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/br-en/opus.br-en-train.br.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/br-en/opus.br-en-train.en.sp
+    transforms: [filtertoolong]
+  train_br-br:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/br-en/opus.br-en-train.br.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/br-en/opus.br-en-train.br.sp
+    transforms: [filtertoolong, bart]
+
+# GPU 5:2
+  train_en-ro:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ro/opus.en-ro-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ro/opus.en-ro-train.ro.sp
+    transforms: [filtertoolong]
+  train_ro-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ro/opus.en-ro-train.ro.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ro/opus.en-ro-train.en.sp
+    transforms: [filtertoolong]
+  train_ro-ro:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ro/opus.en-ro-train.ro.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ro/opus.en-ro-train.ro.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-vi:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-vi/opus.en-vi-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-vi/opus.en-vi-train.vi.sp
+    transforms: [filtertoolong]
+  train_vi-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-vi/opus.en-vi-train.vi.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-vi/opus.en-vi-train.en.sp
+    transforms: [filtertoolong]
+  train_vi-vi:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-vi/opus.en-vi-train.vi.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-vi/opus.en-vi-train.vi.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-ku:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ku/opus.en-ku-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ku/opus.en-ku-train.ku.sp
+    transforms: [filtertoolong]
+  train_ku-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ku/opus.en-ku-train.ku.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ku/opus.en-ku-train.en.sp
+    transforms: [filtertoolong]
+  train_ku-ku:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ku/opus.en-ku-train.ku.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-ku/opus.en-ku-train.ku.sp
+    transforms: [filtertoolong, bart]
+
+# GPU 5:3
+  train_en-sq:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sq/opus.en-sq-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sq/opus.en-sq-train.sq.sp
+    transforms: [filtertoolong]
+  train_sq-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sq/opus.en-sq-train.sq.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sq/opus.en-sq-train.en.sp
+    transforms: [filtertoolong]
+  train_sq-sq:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sq/opus.en-sq-train.sq.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-sq/opus.en-sq-train.sq.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-el:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/el-en/opus.el-en-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/el-en/opus.el-en-train.el.sp
+    transforms: [filtertoolong]
+  train_el-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/el-en/opus.el-en-train.el.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/el-en/opus.el-en-train.en.sp
+    transforms: [filtertoolong]
+  train_el-el:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/el-en/opus.el-en-train.el.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/el-en/opus.el-en-train.el.sp
+    transforms: [filtertoolong, bart]
+
+  train_en-nb:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-nb/opus.en-nb-train.en.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-nb/opus.en-nb-train.nb.sp
+    transforms: [filtertoolong]
+  train_nb-en:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-nb/opus.en-nb-train.nb.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-nb/opus.en-nb-train.en.sp
+    transforms: [filtertoolong]
+  train_nb-nb:
+    path_src: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-nb/opus.en-nb-train.nb.sp
+    path_tgt: /scratch/project_2005099/data/opus/prepare_opus_data_tc_out/supervised/en-nb/opus.en-nb-train.nb.sp
+    transforms: [filtertoolong, bart]
+
+
+src_tgt: [
+    "en-ar", "ar-en", "ar-ar", "en-hi", "hi-en", "hi-hi", "en-az", "az-en", "az-az",
+    "en-de", "de-en", "de-de", "en-gl", "gl-en", "gl-gl", "en-ta", "ta-en", "ta-ta",
+    "en-tr", "tr-en", "tr-tr", "en-nn", "nn-en", "nn-nn", "en-tg", "tg-en", "tg-tg",
+    "en-es", "es-en", "es-es", "en-xh", "xh-en", "xh-xh", "en-rw", "rw-en", "rw-rw",
+    "en-he", "he-en", "he-he", "en-fi", "fi-en", "fi-fi", "en-ne", "ne-en", "ne-ne",
+    "en-sv", "sv-en", "sv-sv", "en-fa", "fa-en", "fa-fa", "en-ka", "ka-en", "ka-ka",
+    "en-eu", "eu-en", "eu-eu", "en-id", "id-en", "id-id", "en-eo", "eo-en", "eo-eo",
+    "en-ko", "ko-en", "ko-ko", "en-it", "it-en", "it-it", "en-gu", "gu-en", "gu-gu",
+    "en-mt", "mt-en", "mt-mt", "en-et", "et-en", "et-et", "en-ga", "ga-en", "ga-ga",
+    "en-bs", "bs-en", "bs-bs", "en-sr", "sr-en", "sr-sr", "en-cy", "cy-en", "cy-cy",
+    "en-uk", "uk-en", "uk-uk", "en-hu", "hu-en", "hu-hu", "en-af", "af-en", "af-af",
+    "en-cs", "cs-en", "cs-cs", "en-sk", "sk-en", "sk-sk", "en-sh", "sh-en", "sh-sh",
+    "en-ms", "ms-en", "ms-ms", "en-da", "da-en", "da-da", "en-si", "si-en", "si-si",
+    "en-no", "no-en", "no-no", "en-pt", "pt-en", "pt-pt", "en-ml", "ml-en", "ml-ml",
+    "en-pl", "pl-en", "pl-pl", "en-hr", "hr-en", "hr-hr", "en-ur", "ur-en", "ur-ur",
+    "en-ca", "ca-en", "ca-ca", "en-sl", "sl-en", "sl-sl", "en-mg", "mg-en", "mg-mg",
+    "en-zh", "zh-en", "zh-zh", "en-ru", "ru-en", "ru-ru", "en-as", "as-en", "as-as",
+    "en-bg", "bg-en", "bg-bg", "en-ja", "ja-en", "ja-ja", "en-km", "km-en", "km-km",
+    "en-bn", "bn-en", "bn-bn", "en-lv", "lv-en", "lv-lv", "en-pa", "pa-en", "pa-pa",
+    "en-is", "is-en", "is-is", "en-lt", "lt-en", "lt-lt", "en-wa", "wa-en", "wa-wa",
+    "en-th", "th-en", "th-th", "en-fr", "fr-en", "fr-fr", "en-uz", "uz-en", "uz-uz",
+    "en-mk", "mk-en", "mk-mk", "en-nl", "nl-en", "nl-nl", "en-br", "br-en", "br-br",
+    "en-ro", "ro-en", "ro-ro", "en-vi", "vi-en", "vi-vi", "en-ku", "ku-en", "ku-ku",
+    "en-sq", "sq-en", "sq-sq", "en-el", "el-en", "el-el", "en-nb", "nb-en", "nb-nb"
+]
+
+# opus72, 6 nodes * 4 gpus
+node_gpu: [
+    "0:0", "0:0", "0:0", "0:0", "0:0", "0:0", "0:0", "0:0", "0:0",
+    "0:1", "0:1", "0:1", "0:1", "0:1", "0:1", "0:1", "0:1", "0:1",
+    "0:2", "0:2", "0:2", "0:2", "0:2", "0:2", "0:2", "0:2", "0:2",
+    "0:3", "0:3", "0:3", "0:3", "0:3", "0:3", "0:3", "0:3", "0:3",
+    "1:0", "1:0", "1:0", "1:0", "1:0", "1:0", "1:0", "1:0", "1:0",
+    "1:1", "1:1", "1:1", "1:1", "1:1", "1:1", "1:1", "1:1", "1:1",
+    "1:2", "1:2", "1:2", "1:2", "1:2", "1:2", "1:2", "1:2", "1:2",
+    "1:3", "1:3", "1:3", "1:3", "1:3", "1:3", "1:3", "1:3", "1:3",
+    "2:0", "2:0", "2:0", "2:0", "2:0", "2:0", "2:0", "2:0", "2:0",
+    "2:1", "2:1", "2:1", "2:1", "2:1", "2:1", "2:1", "2:1", "2:1",
+    "2:2", "2:2", "2:2", "2:2", "2:2", "2:2", "2:2", "2:2", "2:2",
+    "2:3", "2:3", "2:3", "2:3", "2:3", "2:3", "2:3", "2:3", "2:3",
+    "3:0", "3:0", "3:0", "3:0", "3:0", "3:0", "3:0", "3:0", "3:0",
+    "3:1", "3:1", "3:1", "3:1", "3:1", "3:1", "3:1", "3:1", "3:1",
+    "3:2", "3:2", "3:2", "3:2", "3:2", "3:2", "3:2", "3:2", "3:2",
+    "3:3", "3:3", "3:3", "3:3", "3:3", "3:3", "3:3", "3:3", "3:3",
+    "4:0", "4:0", "4:0", "4:0", "4:0", "4:0", "4:0", "4:0", "4:0",
+    "4:1", "4:1", "4:1", "4:1", "4:1", "4:1", "4:1", "4:1", "4:1",
+    "4:2", "4:2", "4:2", "4:2", "4:2", "4:2", "4:2", "4:2", "4:2",
+    "4:3", "4:3", "4:3", "4:3", "4:3", "4:3", "4:3", "4:3", "4:3",
+    "5:0", "5:0", "5:0", "5:0", "5:0", "5:0", "5:0", "5:0", "5:0",
+    "5:1", "5:1", "5:1", "5:1", "5:1", "5:1", "5:1", "5:1", "5:1",
+    "5:2", "5:2", "5:2", "5:2", "5:2", "5:2", "5:2", "5:2", "5:2",
+    "5:3", "5:3", "5:3", "5:3", "5:3", "5:3", "5:3", "5:3", "5:3"
+]
+
+### Transform related opts:
+#### Filter
+src_seq_length: 200
+tgt_seq_length: 200
+#### Bart
+src_subword_type: sentencepiece
+tgt_subword_type: sentencepiece
+mask_ratio: 0.2
+replace_length: 1
+
+# silently ignore empty lines in the data
+skip_empty_level: silent
+
+batch_size: 4096
+batch_type: tokens
+normalization: tokens
+valid_batch_size: 4096
+max_generator_batches: 2
+src_vocab_size: 100000
+tgt_vocab_size: 100000
+encoder_type: transformer
+decoder_type: transformer
+rnn_size: 512
+word_vec_size: 512
+transformer_ff: 2048
+heads: 8
+dec_layers: 6
+dropout: 0.1
+label_smoothing: 0.1
+param_init: 0.0
+param_init_glorot: true
+position_encoding: true
+valid_steps: 500000
+#valid_steps: 100
+warmup_steps: 10000
+#warmup_steps: 40
+report_every: 50
+#report_every: 5
+save_checkpoint_steps: 25000
+keep_checkpoint: 3
+accum_count: 1
+optim: adafactor
+decay_method: none
+learning_rate: 3.0
+max_grad_norm: 0.0
+seed: 3435
+model_type: text
+#save_all_gpus: true
+
+world_size: 24
+gpu_ranks: [0, 1, 2, 3]

@@ -8,7 +8,7 @@ class BaseModel(nn.Module):
     for a simple, generic encoder / decoder or decoder only model.
     """
 
-    def __init__(self, encoder, decoder):
+    def __init__(self, encoder, decoder, attention_bridge):
         super(BaseModel, self).__init__()
 
     def forward(self, src, tgt, lengths, bptt=False, with_align=False):
@@ -52,21 +52,31 @@ class NMTModel(BaseModel):
       decoder (onmt.decoders.DecoderBase): a decoder object
     """
 
-    def __init__(self, encoder, decoder):
-        super(NMTModel, self).__init__(encoder, decoder)
+    def __init__(self, encoder, decoder, attention_bridge):
+        super(NMTModel, self).__init__(encoder, decoder, attention_bridge)
         self.encoder = encoder
         self.decoder = decoder
+        self.attention_bridge = attention_bridge
 
-    def forward(self, src, tgt, lengths, bptt=False, with_align=False):
+    def forward(self, src, tgt, lengths, bptt=False, with_align=False, metadata=None):
         dec_in = tgt[:-1]  # exclude last target from inputs
 
-        enc_state, memory_bank, lengths = self.encoder(src, lengths)
+        encoder = self.encoder[f'encoder{metadata.encoder_id}']
+        decoder = self.decoder[f'decoder{metadata.decoder_id}']
+        # Activate the correct pluggable embeddings
+        encoder.embeddings.activate(metadata.src_lang)
+        decoder.embeddings.activate(metadata.tgt_lang)
+
+        enc_state, memory_bank, lengths, mask = encoder(src, lengths)
+
+        memory_bank, alphas = self.attention_bridge(memory_bank, mask)
+        if self.attention_bridge.is_fixed_length:
+            # turn off masking in the transformer decoder
+            lengths = None
 
         if not bptt:
-            self.decoder.init_state(src, memory_bank, enc_state)
-        dec_out, attns = self.decoder(dec_in, memory_bank,
-                                      memory_lengths=lengths,
-                                      with_align=with_align)
+            decoder.init_state(src, memory_bank, enc_state)
+        dec_out, attns = decoder(dec_in, memory_bank, memory_lengths=lengths, with_align=with_align)
         return dec_out, attns
 
     def update_dropout(self, dropout):
@@ -83,6 +93,7 @@ class NMTModel(BaseModel):
         """
 
         enc, dec = 0, 0
+
         for name, param in self.named_parameters():
             if 'encoder' in name:
                 enc += param.nelement()
@@ -107,8 +118,7 @@ class LanguageModel(BaseModel):
     def __init__(self, encoder=None, decoder=None):
         super(LanguageModel, self).__init__(encoder, decoder)
         if encoder is not None:
-            raise ValueError("LanguageModel should not be used"
-                             "with an encoder")
+            raise ValueError("LanguageModel should not be used with an encoder")
         self.decoder = decoder
 
     def forward(self, src, tgt, lengths, bptt=False, with_align=False):
@@ -134,10 +144,7 @@ class LanguageModel(BaseModel):
 
         if not bptt:
             self.decoder.init_state()
-        dec_out, attns = self.decoder(
-            src, memory_bank=None, memory_lengths=lengths,
-            with_align=with_align
-        )
+        dec_out, attns = self.decoder(src, memory_bank=None, memory_lengths=lengths, with_align=with_align)
         return dec_out, attns
 
     def update_dropout(self, dropout):
@@ -158,7 +165,7 @@ class LanguageModel(BaseModel):
 
         if callable(log):
             # No encoder in LM, seq2seq count formatting kept
-            log("encoder: {}".format(enc))
-            log("decoder: {}".format(dec))
+            log("total encoder parameters: {}".format(enc))
+            log("total decoder parameters: {}".format(dec))
             log("* number of parameters: {}".format(enc + dec))
         return enc, dec

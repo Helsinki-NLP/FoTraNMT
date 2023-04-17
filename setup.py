@@ -11,26 +11,25 @@ setup(
     description='A python implementation of OpenNMT',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    version='2.0.0rc2',
+    version='2.2.0',
     packages=find_packages(),
     project_urls={
         "Documentation": "http://opennmt.net/OpenNMT-py/",
         "Forum": "http://forum.opennmt.net/",
         "Gitter": "https://gitter.im/OpenNMT/OpenNMT-py",
-        "Source": "https://github.com/OpenNMT/OpenNMT-py/"
+        "Source": "https://github.com/OpenNMT/OpenNMT-py/",
     },
     python_requires=">=3.5",
     install_requires=[
-        "tqdm>=4.51,<5",
-        "torch==1.6.0",
-        "torchtext==0.5.0",
-        "future==0.18.2",
-        "configargparse>=1.2.3,<2",
-        "tensorboard>=2.3,<3",
-        "flask==1.1.2",
-        "waitress==1.4.4",
-        "pyonmttok>=1.23,<2;platform_system=='Linux' or platform_system=='Darwin'",
-        "pyyaml==5.3.1",
+        "torch>=1.10.2",
+        "torchtext==0.11.2",
+        "configargparse",
+        "tensorboard>=2.9",
+        "flask==2.0.3",
+        "flake8==4.0.1",
+        "waitress",
+        "pyonmttok>=1.32,<2",
+        "pyyaml",
     ],
     entry_points={
         "console_scripts": [
@@ -39,7 +38,7 @@ setup(
             "onmt_translate=onmt.bin.translate:main",
             "onmt_release_model=onmt.bin.release_model:main",
             "onmt_average_models=onmt.bin.average_models:main",
-            "onmt_build_vocab=onmt.bin.build_vocab:main"
+            "onmt_build_vocab=onmt.bin.build_vocab:main",
         ],
-    }
+    },
 )
