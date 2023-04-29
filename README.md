@@ -5,13 +5,15 @@ We developed FoTraNMT specifically to train and extract massively multilingual m
 
 FoTraNMT is optimized for training large models (on a sufficiently large high-performance cluster). For this, we pay special attention at 
 1. distributing the modules across several processing units, and 
-2. efficiently traininig the network over many translation direction.  
+2. efficiently training the network over many translation direction.  
 
-After training, the system can also be used in  non- resource-intensive settings, because its modular design allows each individual module to be loaded and used independently. _We plan to provide trained modules, so the community can benefit from this feature._
+## This branch: `who-would-win`
 
-This branch specifically covers experiments detailed in the NoDaLiDa 2023 paper ["Dozens of Translation Directions or Millions of Shared Parameters? Comparing Two Types of Multilinguality in Modular Machine Translation"](https://openreview.net/forum?id=1vkyEY-HeLY).
+This branch specifically covers experiments detailed in the NoDaLiDa 2023 paper ["Dozens of Translation Directions or Millions of Shared Parameters? Comparing Two Types of Multilinguality in Modular Machine Translation"](https://openreview.net/forum?id=1vkyEY-HeLY). 
+This paper studies the effect of different amounts of parameter sharing and number of languages on encoder representations.
+This branch contains scripts to replicate training on a slurm cluster (e.g., CSC puhti or mahti), as well as scripts to replicate experiments described in the paper.
 
-## Requirements & Instalation 
+## Requirements & Installation 
 You need to clone this repo
 ```bash
 git clone --branch who-would-win https://github.com/Helsinki-NLP/FoTraNMT.git
@@ -44,7 +46,14 @@ Please cite the corresponding paper:
 ```latex
 @inproceedings{boggia2023dozens,
    title={Dozens of Translation Directions or Millions of Shared Parameters? Comparing Two Types of Multilinguality in Modular Machine Translation},
-   author={Michele Boggia and Stig-Arne Gr{\"o}nroos and Niki Andreas Loppi and Timothee Mickus and Alessandro Raganato and J{\"o}rg Tiedemann and Ra{\'u}l V{\'a}zquez},
+   author={Michele Boggia and 
+      Stig-Arne Gr{\"o}nroos and 
+      Niki Andreas Loppi and 
+      Timothee Mickus and 
+      Alessandro Raganato and 
+      J{\"o}rg Tiedemann and 
+      Ra{\'u}l V{\'a}zquez
+   },
    booktitle={The 24rd Nordic Conference on Computational Linguistics},
    year={2023},
    url={https://openreview.net/forum?id=1vkyEY-HeLY}
