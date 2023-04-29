@@ -9,12 +9,13 @@ FoTraNMT is optimized for training large models (on a sufficiently large high-pe
 
 After training, the system can also be used in  non- resource-intensive settings, because its modular design allows each individual module to be loaded and used independently. _We plan to provide trained modules, so the community can benefit from this feature._
 
+This branch specifically covers experiments detailed in the NoDaLiDa 2023 paper ["Dozens of Translation Directions or Millions of Shared Parameters? Comparing Two Types of Multilinguality in Modular Machine Translation"](https://openreview.net/forum?id=1vkyEY-HeLY).
 
 ## Requirements & Instalation 
 You need to clone this repo
 ```bash
-git clone --branch att-brg https://github.com/Helsinki-NLP/OpenNMT-py.git
-cd OpenNMT-py
+git clone --branch who-would-win https://github.com/Helsinki-NLP/FoTraNMT.git
+cd FoTraNMT
 ```
 We strongly recommend to make the setup in a virtual environment. 
 This is done by:
@@ -31,48 +32,26 @@ pip install --upgrade pip
 ```
 Now that you’re in your virtual environment you can install packages without worrying too much about version control.
 
-First you need to have installed [`torch`](https://pytorch.org/get-started/locally/) according to your system requirements (which can be checked using `nvidia-smi`)
+Packages necessary should be listed in the `setup.py` file. Assuming your current working directory corresponds to the top-level directory of this git, you should be able to install all dependencies with:
 ```bash
-python3 -m pip install torch torchvision
+python3 -m pip install . -e
 ```
 
-After installing pytorch, you can run: 
-```bash
-pip install six tqdm h5py future configargparse pyYAML
-```
-
-# Hands-on example
-
-The following scripts require subword-nmt and sacrebleu.
-```bash
-pip install subword-nmt
-pip install sacrebleu
-
-
-git clone --branch att-brg https://github.com/Helsinki-NLP/OpenNMT-py.git
-```
-
-Example on how to train a simple model with 2 encoder and 1 decoder.   
-First, prepare the parallel data for training, validation, and testing.
-```bash
-cd OpenNMT-py/data 
-source ./prep-data.sh
-```
-   
-Second, let's train a model using French and German as input, and Czech as target language.
-
-```bash
-bash train_example.sh
-```
-It runs on cpu, and it will train a 1-layer model for 10000 training steps   
-   
-After the training is completed, we can evaluate the model on a reference test.
-```bash
-bash test_example.sh
-```
 
 ## Citing this work
-If you use this work, please consider citing the work it builds up on:
+
+Please cite the corresponding paper:
+```latex
+@inproceedings{boggia2023dozens,
+   title={Dozens of Translation Directions or Millions of Shared Parameters? Comparing Two Types of Multilinguality in Modular Machine Translation},
+   author={Michele Boggia and Stig-Arne Gr{\"o}nroos and Niki Andreas Loppi and Timothee Mickus and Alessandro Raganato and J{\"o}rg Tiedemann and Ra{\'u}l V{\'a}zquez},
+   booktitle={The 24rd Nordic Conference on Computational Linguistics},
+   year={2023},
+   url={https://openreview.net/forum?id=1vkyEY-HeLY}
+}
+```
+
+Also consider citing the work it builds up on:
 [Introduction to the architecture](https://www.aclweb.org/anthology/2020.cl-2.5)
 ```latex
 @article{vazquez-etal-2020-systematic,
